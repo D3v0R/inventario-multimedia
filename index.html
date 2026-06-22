@@ -1,66 +1,56 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-require('dotenv').config();
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Multimedia NoSQL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
 
-const Multimedia = require('./models/Multimedia');
-const app = express();
+    <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Subir Elemento a la Base de Datos NoSQL</h2>
+        
+        <form id="uploadForm" action="/api/multimedia" method="POST" enctype="multipart/form-data" class="space-y-4">
+            <div>
+                <label class="block font-medium">Título del Elemento:</label>
+                <input type="text" name="titulo" required class="w-full border p-2 rounded">
+            </div>
 
-// Asegurar que la carpeta 'uploads' exista
-if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
+            <div>
+                <label class="block font-medium">Descripción:</label>
+                <textarea name="descripcion" class="w-full border p-2 rounded"></textarea>
+            </div>
 
-// Configuración avanzada de Multer
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, './uploads/'),
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`);
-    }
-});
+            <div>
+                <label class="block font-medium">Seleccionar Imagen (PNG/JPG):</label>
+                <input type="file" name="imagen" accept="image/*" required class="w-full">
+            </div>
 
-// Filtro: Solo permitir tipos multimedia
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|mp3|wav|mp4|avi|mov/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    if (extname) return cb(null, true);
-    cb(new Error('Tipo de archivo no permitido'));
-};
+            <div>
+                <label class="block font-medium">Seleccionar Audio (MP3/WAV):</label>
+                <input type="file" name="audio" accept="audio/*" class="w-full">
+            </div>
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 50 * 1024 * 1024 } }); // Límite 50MB
+            <div>
+                <label class="block font-medium">Seleccionar Video (MP4/AVI/MOV):</label>
+                <input type="file" name="video" accept="video/*" class="w-full">
+            </div>
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
+            <button id="submitBtn" type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full transition-colors">
+                Guardar en la Nube
+            </button>
+        </form>
+    </div>
 
-// Conexión DB
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("✅ Conectado a MongoDB Atlas"));
-
-app.post('/api/multimedia', upload.fields([
-    { name: 'imagen', maxCount: 1 },
-    { name: 'audio', maxCount: 1 },
-    { name: 'video', maxCount: 1 }
-]), async (req, res) => {
-    try {
-        if (!req.files || !req.files.imagen) {
-            return res.status(400).send('La imagen es obligatoria.');
-        }
-
-        const nuevoElemento = new Multimedia({
-            titulo: req.body.titulo,
-            descripcion: req.body.descripcion,
-            imagenUrl: req.files.imagen[0].path,
-            audioUrl: req.files.audio ? req.files.audio[0].path : null,
-            videoUrl: req.files.video ? req.files.video[0].path : null
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = 'Subiendo... por favor espera';
+            btn.classList.replace('bg-blue-600', 'bg-gray-400');
+            btn.classList.remove('hover:bg-blue-700');
         });
-
-        await nuevoElemento.save();
-        res.status(201).json({ mensaje: 'Elemento guardado con éxito', data: nuevoElemento });
-    } catch (error) {
-        res.status(500).json({ error: 'Error al procesar: ' + error.message });
-    }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));
+    </script>
+</body>
+</html>
