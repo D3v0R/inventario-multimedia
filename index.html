@@ -3,139 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Multimedia NoSQL</title>
+    <title>Gestor de Usuarios</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Colores exactos basados en tu imagen */
+        body { background-color: #1a1a1a; }
+        .bg-card { background-color: #2a2a2a; }
+        .text-purple-custom { color: #c084fc; } /* Tono morado */
+        .btn-cyan { background-color: #00e5ff; color: #000; font-weight: 700; transition: 0.2s; }
+        .btn-cyan:hover { background-color: #00b8cc; }
+        .btn-yellow { background-color: #ffb74d; color: #000; font-weight: 700; transition: 0.2s; }
+        .btn-yellow:hover { background-color: #f5a623; }
+        .border-purple-custom { border-left-color: #c084fc; }
+    </style>
 </head>
-<body class="bg-gray-100 p-8">
+<body class="text-gray-200 p-8 min-h-screen font-sans">
 
-    <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Gestor Multimedia</h2>
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-purple-custom">Gestor de Usuarios</h1>
         
-        <form id="uploadForm" class="space-y-4">
-            <div>
-                <label class="block font-medium text-gray-700">Título:</label>
-                <input type="text" id="nombre" name="titulo" class="w-full border p-2 rounded focus:ring focus:ring-blue-200 outline-none" required>
-            </div>
-            <div>
-                <label class="block font-medium text-gray-700">Rol / Descripción:</label>
-                <input type="text" id="rol" name="descripcion" class="w-full border p-2 rounded focus:ring focus:ring-blue-200 outline-none" required>
-            </div>
+        <div class="bg-card p-6 rounded-lg mb-6 shadow-md">
+            <h2 class="text-xl font-bold mb-4 text-purple-custom">Registrar Nuevo</h2>
             
-            <button type="submit" id="btn-guardar" class="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 transition-colors">
-                Guardar en la Nube
-            </button>
-        </form>
-
-        <hr class="my-6">
-
-        <div class="flex gap-2 mb-4">
-            <button id="btn-accion" class="bg-green-600 hover:bg-green-700 transition-colors text-white px-4 py-2 rounded whitespace-nowrap">Cargar Todos</button>
-            <input type="text" id="input-buscar" placeholder="Buscar..." class="border p-2 rounded flex-grow focus:ring focus:ring-yellow-200 outline-none">
-            <button id="btn-buscar" class="bg-yellow-500 hover:bg-yellow-600 transition-colors text-white px-4 py-2 rounded">Buscar</button>
+            <form id="uploadForm" class="flex flex-wrap gap-4 items-center">
+                <input type="text" id="nombre" name="nombre" placeholder="Nombre completo" class="px-3 py-2 rounded text-black flex-grow outline-none focus:ring-2 focus:ring-purple-500" required>
+                
+                <select id="rol" name="rol" class="px-3 py-2 rounded text-black w-48 outline-none focus:ring-2 focus:ring-purple-500" required>
+                    <option value="Estudiante">Estudiante</option>
+                    <option value="Profesor">Profesor</option>
+                    <option value="Administrador">Administrador</option>
+                </select>
+                
+                <button type="submit" id="btn-guardar" class="btn-cyan px-6 py-2 rounded">Guardar</button>
+            </form>
         </div>
 
-        <div id="contenedor-datos" class="space-y-4"></div>
+        <div class="bg-card p-6 rounded-lg mb-6 shadow-md">
+            <h2 class="text-lg font-bold mb-4 text-white">Buscar en la Base de Datos</h2>
+            <div class="flex flex-wrap gap-4">
+                <input type="text" id="input-buscar" placeholder="Nombre..." class="px-3 py-2 rounded text-black flex-grow outline-none focus:ring-2 focus:ring-cyan-400">
+                <button id="btn-buscar" class="btn-cyan px-6 py-2 rounded">Buscar</button>
+                <button id="btn-accion" class="btn-cyan px-6 py-2 rounded">Cargar Todos</button>
+            </div>
+        </div>
+
+        <div id="contenedor-datos" class="space-y-4">
+            </div>
     </div>
 
     <script>
-        // Asegúrate de que esta URL sea la correcta de tu backend en Render
+        // === CONFIGURACIÓN DE TU BACKEND EN RENDER ===
         const API_URL = "https://inventario-backend-lwvi.onrender.com";
 
+        // Referencias al DOM
         const btnAccion = document.getElementById('btn-accion');
         const btnBuscar = document.getElementById('btn-buscar');
         const contenedor = document.getElementById('contenedor-datos');
         const formulario = document.getElementById('uploadForm');
 
-        // Función para prevenir XSS
+        // Función de seguridad contra inyecciones de código (XSS)
         const escaparHTML = (str) => {
             if (!str) return '';
             return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag])
+                tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag])
             );
         };
 
+        // Renderizar las tarjetas con el diseño de tu imagen
         function renderizar(datos) {
             contenedor.innerHTML = "";
             if (datos.length === 0) {
-                contenedor.innerHTML = "<p class='text-gray-500 text-center'>No hay datos para mostrar.</p>";
+                contenedor.innerHTML = "<p class='text-gray-400'>No hay registros en la base de datos.</p>";
                 return;
             }
 
             datos.forEach(user => {
-                // Adaptamos para leer 'titulo' o 'nombre' dependiendo de cómo lo devuelva tu backend
-                const nombreSeguro = escaparHTML(user.titulo || user.nombre);
-                const rolSeguro = escaparHTML(user.descripcion || user.rol);
+                const nombreSeguro = escaparHTML(user.nombre || user.titulo);
+                const rolSeguro = escaparHTML(user.rol || user.descripcion);
                 const idSeguro = escaparHTML(user._id);
 
                 contenedor.innerHTML += `
-                    <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400 text-white shadow">
-                        <h3 class="font-bold text-lg">${nombreSeguro}</h3>
-                        <p class="text-gray-200">Rol/Desc: ${rolSeguro}</p>
-                        <p class="text-xs text-gray-400 mt-1">ID: ${idSeguro}</p>
-                        <div class="mt-3 flex gap-2">
-                            <button onclick="editarUsuario('${idSeguro}', '${nombreSeguro}', '${rolSeguro}')" class="bg-purple-600 hover:bg-purple-700 transition-colors px-3 py-1 rounded text-sm">Editar</button>
-                            <button onclick="eliminarUsuario('${idSeguro}')" class="bg-red-600 hover:bg-red-700 transition-colors px-3 py-1 rounded text-sm">Borrar</button>
+                    <div class="bg-card p-5 rounded-lg border-l-[6px] border-purple-custom shadow-md">
+                        <h3 class="font-bold text-xl text-white mb-2">${nombreSeguro}</h3>
+                        <p class="text-gray-200 mb-1 text-sm">Rol: ${rolSeguro}</p>
+                        <p class="text-xs text-gray-500 mb-4">ID: ${idSeguro}</p>
+                        <div class="flex gap-3">
+                            <button onclick="editarUsuario('${idSeguro}', '${nombreSeguro}', '${rolSeguro}')" class="btn-yellow px-4 py-1.5 rounded text-sm">Editar</button>
+                            <button onclick="eliminarUsuario('${idSeguro}')" class="btn-cyan px-4 py-1.5 rounded text-sm">Eliminar</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        // Cargar todos los datos
+        // Cargar todos los registros
         btnAccion.addEventListener('click', async () => {
             try {
-                contenedor.innerHTML = "<p class='text-gray-500 text-center'>Cargando...</p>";
+                contenedor.innerHTML = "<p class='text-gray-400'>Cargando base de datos...</p>";
                 const res = await fetch(`${API_URL}/datos`);
                 if (!res.ok) throw new Error('Error al cargar los datos');
                 renderizar(await res.json());
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = "<p class='text-red-500 text-center'>Error de conexión con el servidor.</p>";
+                contenedor.innerHTML = "<p class='text-red-400'>No se pudo conectar con el servidor.</p>";
             }
         });
 
-        // Guardar nuevo registro (Interceptando el formulario)
+        // ==========================================
+        // LA MAGIA PARA QUE NO SALGA PANTALLA BLANCA
+        // ==========================================
         formulario.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Evita que la página recargue o se vaya a blanco
+            e.preventDefault(); // ¡Esta línea detiene la recarga del navegador!
 
-            const formData = new FormData(e.target);
+            const nombre = document.getElementById('nombre').value.trim();
+            const rol = document.getElementById('rol').value.trim();
+            const btnGuardar = document.getElementById('btn-guardar');
+            
+            if (!nombre || !rol) return;
             
             try {
-                // Deshabilitar el botón mientras guarda para evitar dobles clics
-                const btnGuardar = document.getElementById('btn-guardar');
+                // Estado de carga en el botón
                 btnGuardar.innerText = "Guardando...";
                 btnGuardar.disabled = true;
 
+                // Tu backend usa Multer, así que necesitamos enviar los datos como FormData
+                const formData = new FormData();
+                formData.append('nombre', nombre);
+                formData.append('rol', rol);
+
                 const res = await fetch(`${API_URL}/guardar`, {
                     method: 'POST',
-                    body: formData // Enviamos FormData directamente
+                    body: formData
                 });
                 
-                if (!res.ok) throw new Error('Error al guardar');
+                if (!res.ok) throw new Error('Error al guardar en el servidor');
                 
-                e.target.reset(); // Limpia los inputs del formulario
-                btnAccion.click(); // Recarga la lista
+                // Si todo sale bien, limpiamos y recargamos visualmente
+                formulario.reset(); 
+                btnAccion.click(); 
                 
             } catch (error) {
-                alert("Hubo un problema al guardar los datos.");
+                alert("Hubo un problema de conexión al guardar.");
                 console.error(error);
             } finally {
-                // Restaurar el botón
-                const btnGuardar = document.getElementById('btn-guardar');
-                btnGuardar.innerText = "Guardar en la Nube";
+                // Restauramos el botón
+                btnGuardar.innerText = "Guardar";
                 btnGuardar.disabled = false;
             }
         });
 
-        // Eliminar registro
-        async function eliminarUsuario(id) {
-            if (!confirm("¿Estás seguro de que deseas eliminar este registro?")) return;
+        // Borrar usuario
+        window.eliminarUsuario = async function(id) {
+            if (!confirm("¿Seguro que deseas eliminar este registro permanentemente?")) return;
             try {
                 const res = await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error('Error al eliminar');
@@ -146,12 +165,12 @@
             }
         }
 
-        // Editar registro
-        async function editarUsuario(id, nombreActual, rolActual) {
-            const nuevoNombre = prompt("Edita el título:", nombreActual);
+        // Editar usuario
+        window.editarUsuario = async function(id, nombreActual, rolActual) {
+            const nuevoNombre = prompt("Edita el nombre:", nombreActual);
             if (nuevoNombre === null) return;
 
-            const nuevoRol = prompt("Edita la descripción:", rolActual);
+            const nuevoRol = prompt("Edita el rol:", rolActual);
             if (nuevoRol === null) return;
 
             if (nuevoNombre.trim() && nuevoRol.trim()) {
@@ -159,7 +178,7 @@
                     const res = await fetch(`${API_URL}/actualizar/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ titulo: nuevoNombre.trim(), descripcion: nuevoRol.trim() })
+                        body: JSON.stringify({ nombre: nuevoNombre.trim(), rol: nuevoRol.trim() })
                     });
                     if (!res.ok) throw new Error('Error al actualizar');
                     btnAccion.click();
@@ -167,30 +186,28 @@
                     alert("Hubo un problema al actualizar el registro.");
                     console.error(error);
                 }
-            } else {
-                alert("Los campos no pueden estar vacíos.");
             }
         }
 
-        // Buscar
+        // Buscar usuario
         btnBuscar.addEventListener('click', async () => {
             const term = document.getElementById('input-buscar').value.trim();
             if (!term) {
-                btnAccion.click();
+                btnAccion.click(); 
                 return;
             }
             try {
-                contenedor.innerHTML = "<p class='text-gray-500 text-center'>Buscando...</p>";
+                contenedor.innerHTML = "<p class='text-gray-400'>Buscando...</p>";
                 const res = await fetch(`${API_URL}/buscar/${term}`);
                 if (!res.ok) throw new Error('Error en la búsqueda');
                 renderizar(await res.json());
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = "<p class='text-red-500 text-center'>Error al realizar la búsqueda.</p>";
+                contenedor.innerHTML = "<p class='text-red-400'>Error al realizar la búsqueda.</p>";
             }
         });
 
-        // Carga inicial
+        // Autocargar datos al iniciar la página
         document.addEventListener('DOMContentLoaded', () => btnAccion.click());
     </script>
 </body>
