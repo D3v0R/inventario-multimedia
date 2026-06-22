@@ -2,48 +2,65 @@ const express = require('express');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const Multimedia = require('./models/Multimedia');
 const app = express();
 
-// Configuración de Multer para guardar archivos en una carpeta 'uploads'
+// Asegurar que la carpeta 'uploads' exista
+if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
+
+// Configuración avanzada de Multer
 const storage = multer.diskStorage({
-    destination: './uploads/',
+    destination: (req, file, cb) => cb(null, './uploads/'),
     filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
+        cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`);
     }
 });
-const upload = multer({ storage: storage });
+
+// Filtro: Solo permitir tipos multimedia
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|mp3|wav|mp4|avi|mov/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    if (extname) return cb(null, true);
+    cb(new Error('Tipo de archivo no permitido'));
+};
+
+const upload = multer({ storage, fileFilter, limits: { fileSize: 50 * 1024 * 1024 } }); // Límite 50MB
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads')); // Para poder ver los archivos
+app.use('/uploads', express.static('uploads'));
 
 // Conexión DB
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("Conectado a MongoDB"));
+    .then(() => console.log("✅ Conectado a MongoDB Atlas"));
 
-// Ruta para recibir el formulario
 app.post('/api/multimedia', upload.fields([
     { name: 'imagen', maxCount: 1 },
     { name: 'audio', maxCount: 1 },
     { name: 'video', maxCount: 1 }
 ]), async (req, res) => {
     try {
+        if (!req.files || !req.files.imagen) {
+            return res.status(400).send('La imagen es obligatoria.');
+        }
+
         const nuevoElemento = new Multimedia({
             titulo: req.body.titulo,
             descripcion: req.body.descripcion,
-            imagenUrl: req.files['imagen'] ? req.files['imagen'][0].path : '',
-            audioUrl: req.files['audio'] ? req.files['audio'][0].path : '',
-            videoUrl: req.files['video'] ? req.files['video'][0].path : ''
+            imagenUrl: req.files.imagen[0].path,
+            audioUrl: req.files.audio ? req.files.audio[0].path : null,
+            videoUrl: req.files.video ? req.files.video[0].path : null
         });
 
         await nuevoElemento.save();
-        res.send('Elemento guardado con éxito');
+        res.status(201).json({ mensaje: 'Elemento guardado con éxito', data: nuevoElemento });
     } catch (error) {
-        res.status(500).send('Error al guardar: ' + error.message);
+        res.status(500).json({ error: 'Error al procesar: ' + error.message });
     }
 });
 
-app.listen(3000, () => console.log('Servidor en puerto 3000'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));
