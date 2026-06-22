@@ -1,48 +1,75 @@
-const API_URL = "https://inventario-multimedia.onrender.com";
+const express = require('express');
+const multer = require('multer');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const path = require('path');
+const Multimedia = require('./models/Multimedia');
 
-// Evento para el Formulario (Guardar con archivos)
-document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-    e.preventDefault(); // EVITA LA RECARGA
-    
-    const formData = new FormData(e.target);
-    
+const app = express();
+
+// --- CONFIGURACIÓN ---
+app.use(cors());
+app.use(express.json());
+
+// --- CONEXIÓN A LA BASE DE DATOS ---
+// Asegúrate de que en Render, la variable de entorno se llame MONGODB_URI
+const MONGO_URI = process.env.MONGODB_URI;
+
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("✅ Conectado a MongoDB"))
+    .catch((err) => {
+        console.error("❌ Error CRÍTICO al conectar:", err);
+        process.exit(1);
+    });
+
+// --- SUBIDA DE ARCHIVOS ---
+const upload = multer({ dest: 'uploads/' });
+
+// --- RUTAS (CRUD) ---
+
+// CREATE
+app.post('/guardar', upload.any(), async (req, res) => {
     try {
-        await fetch(`${API_URL}/api/multimedia`, { // Asegúrate que esta ruta coincida con tu backend
-            method: 'POST',
-            body: formData // FormData gestiona el multipart/form-data automáticamente
+        const nuevo = new Multimedia({
+            titulo: req.body.titulo,
+            descripcion: req.body.descripcion
         });
-        
-        e.target.reset(); // Limpia el formulario
-        btnAccion.click(); // Refresca la lista automáticamente
+        await nuevo.save();
+        res.status(201).json(nuevo);
     } catch (err) {
-        console.error("Error al guardar:", err);
+        res.status(400).json({ error: err.message });
     }
 });
 
-// Función de renderizado (Igual a la que tenías)
-function renderizar(datos) {
-    const contenedor = document.getElementById('contenedor-datos');
-    contenedor.innerHTML = "";
-    datos.forEach(item => {
-        contenedor.innerHTML += `
-            <div style="background: #2c2c2c; padding: 15px; margin: 10px 0; color: white;">
-                <h3>${item.titulo}</h3>
-                <p>${item.descripcion}</p>
-                <button onclick="eliminarUsuario('${item._id}')">Borrar</button>
-            </div>
-        `;
-    });
-}
-
-// Cargar todos
-const btnAccion = document.getElementById('btn-accion');
-btnAccion.addEventListener('click', async () => {
-    const res = await fetch(`${API_URL}/api/multimedia`);
-    renderizar(await res.json());
+// READ
+app.get('/datos', async (req, res) => {
+    try {
+        const data = await Multimedia.find();
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: "Error al obtener datos" });
+    }
 });
 
-// Eliminar
-async function eliminarUsuario(id) {
-    await fetch(`${API_URL}/api/multimedia/${id}`, { method: 'DELETE' });
-    btnAccion.click();
-}
+// DELETE
+app.delete('/eliminar/:id', async (req, res) => {
+    try {
+        await Multimedia.findByIdAndDelete(req.params.id);
+        res.json({ message: "Eliminado correctamente" });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// --- RUTA PARA SERVIR TU HTML ---
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// --- ENCENDER EL SERVIDOR ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor en puerto ${PORT}`);
+});
