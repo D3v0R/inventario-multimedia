@@ -1,58 +1,63 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
+// IMPORTANTE: Asegúrate de tener este modelo en models/Multimedia.js
+const Multimedia = require('./models/Multimedia');
 const app = express();
 
+// Configuración de carpetas
+if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
+
+// Configuración de Multer
+const storage = multer.diskStorage({
+    destination: './uploads/',
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '-'));
+    }
+});
+const upload = multer({ storage });
+
 // Middlewares
-app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
+app.use(express.static(__dirname)); 
 
-// Servir archivos estáticos desde la carpeta actual (donde está el index.html)
-app.use(express.static(__dirname));
+// Conexión a MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log("✅ Conectado a MongoDB Atlas"))
+    .catch(err => console.error("Error de conexión:", err));
 
-// Ruta principal para servir tu index.html
+// Ruta principal
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 1. Conexión a la Base de Datos
-const uri = process.env.MONGODB_URI;
-mongoose.connect(uri)
-    .then(() => console.log("Conectado a MongoDB Atlas"))
-    .catch(err => console.error("Error de conexión:", err));
+// !!! LA RUTA QUE TE FALTA !!!
+app.post('/api/multimedia', upload.fields([
+    { name: 'imagen', maxCount: 1 },
+    { name: 'audio', maxCount: 1 },
+    { name: 'video', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const nuevoElemento = new Multimedia({
+            titulo: req.body.titulo,
+            descripcion: req.body.descripcion,
+            imagenUrl: req.files.imagen ? req.files.imagen[0].path : '',
+            audioUrl: req.files.audio ? req.files.audio[0].path : '',
+            videoUrl: req.files.video ? req.files.video[0].path : ''
+        });
 
-// 2. Modelo
-const Usuario = mongoose.model('Usuario', new mongoose.Schema({
-    nombre: String,
-    rol: String,
-    status: Boolean
-}));
-
-// 3. Rutas API
-app.get('/datos', async (req, res) => {
-    const usuarios = await Usuario.find();
-    res.json(usuarios);
+        await nuevoElemento.save();
+        res.send('<h1>Guardado con éxito</h1><a href="/">Volver</a>');
+    } catch (error) {
+        res.status(500).send('Error al guardar: ' + error.message);
+    }
 });
 
-app.post('/guardar', async (req, res) => {
-    const nuevo = new Usuario({ ...req.body, status: true });
-    await nuevo.save();
-    res.status(201).json(nuevo);
-});
-
-app.delete('/eliminar/:id', async (req, res) => {
-    await Usuario.findByIdAndDelete(req.params.id);
-    res.send("Eliminado");
-});
-
-app.get('/buscar/:nombre', async (req, res) => {
-    const resultados = await Usuario.find({ nombre: { $regex: req.params.nombre, $options: 'i' } });
-    res.json(resultados);
-});
-
-// 4. Iniciar servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));
