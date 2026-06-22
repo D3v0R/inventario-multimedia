@@ -109,3 +109,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor encendido y escuchando en el puerto ${PORT}`);
 });
+
+app.get('/', (req, res) => {
+    res.send('¡El backend del Gestor Multimedia está encendido y funcionando al 100%!');
+});
