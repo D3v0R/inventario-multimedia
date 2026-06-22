@@ -50,11 +50,8 @@
     contenedor.innerHTML = datos.length ? "" : "<p class='text-center'>No hay datos.</p>";
     
     datos.forEach(item => {
-        // Asumimos que item.archivos contiene la ruta (ej. 'uploads/foto.jpg')
-        // Si no tienes el campo archivos, ajusta según tu modelo
-        const imagenSrc = item.archivos && item.archivos.length > 0 
-                          ? `${API_URL}/${item.archivos[0]}` 
-                          : null;
+        // Aquí verificamos si existe 'imagenUrl' y construimos la ruta completa
+        const imagenSrc = item.imagenUrl ? `${API_URL}/${item.imagenUrl}` : null;
 
         contenedor.innerHTML += `
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400">
