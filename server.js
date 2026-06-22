@@ -1,44 +1,13 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-require('dotenv').config();
-
-// IMPORTANTE: Asegúrate de tener este modelo en models/Multimedia.js
 const Multimedia = require('./models/Multimedia');
-const app = express();
+const router = express.Router();
 
-// Configuración de carpetas
-if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
+// Configuración de almacenamiento local
+const upload = multer({ dest: 'uploads/' });
 
-// Configuración de Multer
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '-'));
-    }
-});
-const upload = multer({ storage });
-
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
-app.use(express.static(__dirname)); 
-
-// Conexión a MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log("✅ Conectado a MongoDB Atlas"))
-    .catch(err => console.error("Error de conexión:", err));
-
-// Ruta principal
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// !!! LA RUTA QUE TE FALTA !!!
-app.post('/api/multimedia', upload.fields([
+// CREATE: Subir nuevo archivo
+router.post('/', upload.fields([
     { name: 'imagen', maxCount: 1 },
     { name: 'audio', maxCount: 1 },
     { name: 'video', maxCount: 1 }
@@ -47,17 +16,35 @@ app.post('/api/multimedia', upload.fields([
         const nuevoElemento = new Multimedia({
             titulo: req.body.titulo,
             descripcion: req.body.descripcion,
-            imagenUrl: req.files.imagen ? req.files.imagen[0].path : '',
-            audioUrl: req.files.audio ? req.files.audio[0].path : '',
-            videoUrl: req.files.video ? req.files.video[0].path : ''
+            archivos: {
+                imagen: req.files.imagen ? req.files.imagen[0].path : null,
+                audio: req.files.audio ? req.files.audio[0].path : null,
+                video: req.files.video ? req.files.video[0].path : null
+            }
         });
-
         await nuevoElemento.save();
-        res.send('<h1>Guardado con éxito</h1><a href="/">Volver</a>');
-    } catch (error) {
-        res.status(500).send('Error al guardar: ' + error.message);
+        res.status(201).json(nuevoElemento);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Servidor en http://localhost:${PORT}`));
+// READ: Obtener todos los elementos
+router.get('/', async (req, res) => {
+    const elementos = await Multimedia.find();
+    res.json(elementos);
+});
+
+// UPDATE: Actualizar descripción
+router.put('/:id', async (req, res) => {
+    const actualizado = await Multimedia.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(actualizado);
+});
+
+// DELETE: Borrar elemento
+router.delete('/:id', async (req, res) => {
+    await Multimedia.findByIdAndDelete(req.params.id);
+    res.json({ message: "Elemento eliminado correctamente" });
+});
+
+module.exports = router;

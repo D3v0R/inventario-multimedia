@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 
-const ElementoMultimediaSchema = new mongoose.Schema({
+const MultimediaSchema = new mongoose.Schema({
     titulo: { type: String, required: true },
     descripcion: String,
-    imagenUrl: String,
-    audioUrl: String,
-    videoUrl: String,
-    fechaCreacion: { type: Date, default: Date.now }
+    archivos: {
+        imagen: String,
+        audio: String,
+        video: String
+    },
+    fechaSubida: { type: Date, default: Date.now }
 });
-
-module.exports = mongoose.model('Multimedia', ElementoMultimediaSchema);
+module.exports = mongoose.model('Multimedia', MultimediaSchema);
