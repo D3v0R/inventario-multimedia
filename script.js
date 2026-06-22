@@ -95,5 +95,43 @@ btnBuscar.addEventListener('click', async () => {
         });
     } catch (error) {
         console.error("Error en la consulta:", error);
-    }
+    }// La ruta es relativa al servidor actual
+const API_URL = ""; 
+
+const btnAccion = document.getElementById('btn-accion');
+const btnGuardar = document.getElementById('btn-guardar');
+const contenedor = document.getElementById('contenedor-datos');
+const btnBuscar = document.getElementById('btn-buscar');
+
+btnAccion.addEventListener('click', async () => {
+    try {
+        const res = await fetch(`${API_URL}/datos`);
+        const datos = await res.json();
+        contenedor.innerHTML = ""; 
+        datos.forEach(user => {
+            contenedor.innerHTML += `
+                <div>
+                    <h3>${user.nombre}</h3>
+                    <p>Rol: ${user.rol}</p>
+                    <button onclick="eliminarUsuario('${user._id}')">Eliminar</button>
+                </div>`;
+        });
+    } catch (err) { contenedor.innerHTML = "<p>Error de conexión</p>"; }
+});
+
+async function eliminarUsuario(id) {
+    await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
+    btnAccion.click();
+}
+
+btnGuardar.addEventListener('click', async () => {
+    const nombre = document.getElementById('nombre').value;
+    const rol = document.getElementById('rol').value;
+    await fetch(`${API_URL}/guardar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, rol })
+    });
+    btnAccion.click();
+});
 });
