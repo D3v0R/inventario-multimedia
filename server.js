@@ -11,12 +11,14 @@ const app = express();
 app.use(cors()); // Permite peticiones desde tu archivo HTML
 app.use(express.json()); // Permite entender los datos en formato JSON
 
-// 3. CONEXIÓN A LA BASE DE DATOS (Asegúrate de poner tu URL real)
-const MONGO_URI = process.env.MONGO_URI || "AQUI_VA_TU_URL_DE_MONGODB_ATLAS";
+// 3. CONEXIÓN A LA BASE DE DATOS
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI; 
 mongoose.connect(MONGO_URI)
     .then(() => console.log("✅ Conectado a la base de datos MongoDB"))
-    .catch((err) => console.error("❌ Error al conectar a MongoDB:", err));
-
+    .catch((err) => {
+        console.error("❌ Error CRÍTICO al conectar a MongoDB:", err);
+        process.exit(1); // Esto ayuda a Render a entender que falló y reiniciar
+    });
 // Configuración de almacenamiento local
 const upload = multer({ dest: 'uploads/' });
 
