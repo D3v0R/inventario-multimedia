@@ -1,0 +1,35 @@
+<!DOCTYPE html> 
+<html lang="es"> 
+<head> 
+<meta charset="UTF-8"> 
+<title>Mi Dashboard NoSQL</title> 
+<link rel="stylesheet" href="style.css"> 
+</head> 
+<body> 
+<h1>Gestor de Usuarios (NoSQL View)</h1> 
+<div id="contenedor-datos">
+<p>Cargando datos de la base de datos...</p> 
+    </div> 
+    <div id="busqueda">
+<h3> Buscar en la Base de Datos</h3>
+<input type="text" id="input-buscar" placeholder="Escribe un nombre...">
+    <button id="btn-buscar">Buscar</button>
+</div>
+<hr>
+    <div id="registro-usuario">
+<h2>Registrar Nuevo Usuario</h2>
+<input type="text" id="nombre" placeholder="Nombre completo" required>
+<select id="rol">
+<option value="Estudiante">Estudiante</option>
+<option value="Docente">Docente</option>
+<option value="Administrador">Administrador</option>
+</select>
+<button id="btn-guardar">Guardar en NoSQL</button>
+</div>
+<hr>
+    <button id="btn-accion">Actualizar Vista</button> 
+ 
+    <script src="script.js"></script> 
+    <footer>Desarrolado por Diego</footer>
+</body> 
+</html>
