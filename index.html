@@ -21,28 +21,40 @@
         <div class="bg-card p-6 rounded-lg shadow-md mb-8">
             <h2 class="text-xl font-bold mb-4 text-purple-custom">Subir Elemento</h2>
             <form id="uploadForm" class="space-y-4">
-                <input type="text" name="titulo" placeholder="Título" required class="w-full p-2 rounded text-black outline-none">
-                <textarea name="descripcion" placeholder="Descripción" class="w-full p-2 rounded text-black outline-none"></textarea>
+                <input type="text" name="titulo" placeholder="Título" required class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white outline-none focus:border-purple-500 transition-colors">
                 
-                <div class="text-sm bg-gray-800 p-3 rounded">
-                    <div class="mb-2">
-                        <label class="font-bold text-gray-300">Imagen:</label> 
-                        <input type="file" name="imagen" accept="image/*" class="ml-2 text-gray-400">
-                    </div>
-                    <div>
-                        <label class="font-bold text-gray-300">Audio:</label> 
-                        <input type="file" name="audio" accept="audio/*" class="ml-4 text-gray-400">
-                    </div>
+                <textarea name="descripcion" placeholder="Descripción" class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white outline-none focus:border-purple-500 transition-colors"></textarea>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-purple-500 border-dashed rounded-lg cursor-pointer bg-gray-900 hover:bg-gray-800 transition-colors group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-2 text-purple-400 group-hover:text-purple-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <p class="mb-1 text-sm text-purple-400 group-hover:text-purple-300 font-bold">Seleccionar Imagen</p>
+                            <p id="texto-imagen" class="text-xs text-gray-500 truncate max-w-[150px]">Ningún archivo</p>
+                        </div>
+                        <input type="file" name="imagen" accept="image/*" class="hidden" onchange="document.getElementById('texto-imagen').textContent = this.files[0] ? this.files[0].name : 'Ningún archivo'">
+                    </label>
+
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-cyan-500 border-dashed rounded-lg cursor-pointer bg-gray-900 hover:bg-gray-800 transition-colors group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-2 text-cyan-400 group-hover:text-cyan-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+                            <p class="mb-1 text-sm text-cyan-400 group-hover:text-cyan-300 font-bold">Seleccionar Audio</p>
+                            <p id="texto-audio" class="text-xs text-gray-500 truncate max-w-[150px]">Ningún archivo</p>
+                        </div>
+                        <input type="file" name="audio" accept="audio/*" class="hidden" onchange="document.getElementById('texto-audio').textContent = this.files[0] ? this.files[0].name : 'Ningún archivo'">
+                    </label>
+
                 </div>
                 
-                <button type="submit" id="btn-guardar" class="btn-cyan w-full py-2 rounded">Guardar en la Nube</button>
+                <button type="submit" id="btn-guardar" class="btn-cyan w-full py-3 mt-4 rounded uppercase tracking-wider">Guardar en la Nube</button>
             </form>
         </div>
 
-        <div class="flex gap-2 mb-4">
-            <button id="btn-accion" class="bg-green-600 px-4 py-2 rounded font-bold">Cargar Todos</button>
-            <input type="text" id="input-buscar" placeholder="Buscar..." class="p-2 rounded flex-grow text-black outline-none">
-            <button id="btn-buscar" class="bg-yellow-500 px-4 py-2 rounded text-black font-bold">Buscar</button>
+        <div class="flex gap-2 mb-6">
+            <button id="btn-accion" class="bg-green-600 hover:bg-green-700 transition-colors px-4 py-2 rounded font-bold shadow-md">Cargar Todos</button>
+            <input type="text" id="input-buscar" placeholder="Buscar elemento..." class="p-2 rounded flex-grow bg-gray-800 border border-gray-700 text-white outline-none focus:border-yellow-500">
+            <button id="btn-buscar" class="bg-yellow-500 hover:bg-yellow-600 transition-colors px-4 py-2 rounded text-black font-bold shadow-md">Buscar</button>
         </div>
 
         <div id="contenedor-datos" class="space-y-4"></div>
@@ -53,34 +65,30 @@
         const contenedor = document.getElementById('contenedor-datos');
         const formulario = document.getElementById('uploadForm');
 
-        // Función para renderizar tarjetas (Ahora con Imagen, Audio y Editar)
         function renderizar(datos) {
-            contenedor.innerHTML = datos.length ? "" : "<p class='text-center text-gray-400'>No hay datos guardados aún.</p>";
+            contenedor.innerHTML = datos.length ? "" : "<p class='text-center text-gray-500 italic mt-8'>No hay datos guardados aún.</p>";
             
             datos.forEach(item => {
-                // Rutas de archivos
                 const rutaImagen = item.archivos && item.archivos.imagen ? item.archivos.imagen : null;
                 const rutaAudio = item.archivos && item.archivos.audio ? item.archivos.audio : null;
                 
-                // Elementos HTML
-                const imagenHTML = rutaImagen ? `<img src="${API_URL}/${rutaImagen}" class="w-full h-48 object-cover mb-2 rounded" alt="Imagen">` : '';
-                const audioHTML = rutaAudio ? `<audio controls class="w-full mt-3"><source src="${API_URL}/${rutaAudio}"></audio>` : '';
+                const imagenHTML = rutaImagen ? `<img src="${API_URL}/${rutaImagen}" class="w-full h-56 object-cover mb-3 rounded shadow-md" alt="Imagen">` : '';
+                const audioHTML = rutaAudio ? `<audio controls class="w-full mt-3 rounded"><source src="${API_URL}/${rutaAudio}"></audio>` : '';
 
                 contenedor.innerHTML += `
-                    <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400 mb-4 shadow-lg">
+                    <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-purple-500 mb-4 shadow-xl hover:bg-gray-750 transition-all">
                         ${imagenHTML}
-                        <h3 class="font-bold text-xl text-white">${item.titulo}</h3>
-                        <p class="text-gray-400 mt-1">${item.descripcion}</p>
+                        <h3 class="font-bold text-2xl text-white tracking-wide">${item.titulo}</h3>
+                        <p class="text-gray-400 mt-2 leading-relaxed">${item.descripcion}</p>
                         ${audioHTML}
-                        <div class="mt-4 flex gap-2">
-                            <button onclick="editar('${item._id}', '${item.titulo}')" class="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm font-bold transition">Editar Título</button>
-                            <button onclick="eliminar('${item._id}')" class="bg-red-600 hover:bg-red-700 px-4 py-1 rounded text-sm font-bold transition">Borrar</button>
+                        <div class="mt-5 flex gap-3">
+                            <button onclick="editar('${item._id}', '${item.titulo}')" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded text-sm font-bold transition-colors shadow">Editar</button>
+                            <button onclick="eliminar('${item._id}')" class="bg-red-600 hover:bg-red-500 px-4 py-1.5 rounded text-sm font-bold transition-colors shadow">Borrar</button>
                         </div>
                     </div>`;
             });
         }
 
-        // CRUD: Create (Envía FormData con archivos)
         formulario.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target); 
@@ -93,6 +101,9 @@
 
                 if (res.ok) { 
                     formulario.reset(); 
+                    // Reiniciar también los textos de los archivos
+                    document.getElementById('texto-imagen').textContent = 'Ningún archivo';
+                    document.getElementById('texto-audio').textContent = 'Ningún archivo';
                     document.getElementById('btn-accion').click(); 
                 } else {
                     alert("Error al guardar en el servidor.");
@@ -102,7 +113,6 @@
             }
         });
 
-        // CRUD: Read
         document.getElementById('btn-accion').addEventListener('click', async () => {
             try {
                 const res = await fetch(`${API_URL}/datos`);
@@ -112,7 +122,6 @@
             }
         });
 
-        // CRUD: Update (Editar)
         async function editar(id, tituloActual) {
             const nuevoTitulo = prompt("Ingresa el nuevo título:", tituloActual);
             
@@ -123,26 +132,24 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ titulo: nuevoTitulo })
                     });
-                    document.getElementById('btn-accion').click(); // Recargar datos
+                    document.getElementById('btn-accion').click();
                 } catch (err) {
                     console.error("Error al actualizar:", err);
                 }
             }
         }
 
-        // CRUD: Delete
         async function eliminar(id) {
             if(confirm("¿Seguro que quieres borrar este elemento?")) {
                 try {
                     await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
-                    document.getElementById('btn-accion').click(); // Recargar datos
+                    document.getElementById('btn-accion').click();
                 } catch (err) {
                     console.error("Error al eliminar:", err);
                 }
             }
         }
 
-        // Carga inicial automática
         document.getElementById('btn-accion').click();
     </script>
 </body>
