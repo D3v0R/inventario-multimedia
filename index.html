@@ -59,12 +59,28 @@
             });
         }
 
-        // CRUD: Create
-        formulario.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const res = await fetch(`${API_URL}/guardar`, { method: 'POST', body: new FormData(e.target) });
-            if (res.ok) { formulario.reset(); document.getElementById('btn-accion').click(); }
-        });
+        // CRUD: Create (Actualizado para enviar JSON)
+formulario.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Obtenemos los datos del formulario
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    const res = await fetch(`${API_URL}/guardar`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, // Decimos que enviamos JSON
+        body: JSON.stringify(data) // Convertimos a texto
+    });
+
+    if (res.ok) { 
+        formulario.reset(); 
+        document.getElementById('btn-accion').click(); 
+    } else {
+        const error = await res.text();
+        console.error("Error del servidor:", error);
+    }
+});
 
         // CRUD: Read
         document.getElementById('btn-accion').addEventListener('click', async () => {

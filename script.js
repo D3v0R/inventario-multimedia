@@ -28,8 +28,9 @@ const upload = multer({ dest: 'uploads/' });
 // --- RUTAS (CRUD) ---
 
 // CREATE
-app.post('/guardar', upload.any(), async (req, res) => {
+app.post('/guardar', express.json(), async (req, res) => {
     try {
+        // Ignoramos multer por un segundo, recibimos puro JSON
         const nuevo = new Multimedia({
             titulo: req.body.titulo,
             descripcion: req.body.descripcion
