@@ -1,18 +1,20 @@
-// 1. Selección de elementos
+// 1. URL base de tu servidor en la nube (Render)
+const API_URL = "https://inventario-backend-lwvi.onrender.com";
+
+// 2. Selección de elementos
 const btnAccion = document.getElementById('btn-accion');
 const btnGuardar = document.getElementById('btn-guardar');
 const contenedor = document.getElementById('contenedor-datos');
 const btnBuscar = document.getElementById('btn-buscar');
 
-// 2. Función para obtener y mostrar los datos
+// 3. Función para obtener y mostrar los datos
 btnAccion.addEventListener('click', async () => {
     try {
-        const respuesta = await fetch('http://localhost:3000/datos');
-        const datos = await respuesta.json(); // La variable se crea aquí
+        const respuesta = await fetch(`${API_URL}/datos`);
+        const datos = await respuesta.json();
         
         contenedor.innerHTML = ""; // Limpiar contenedor
         
-        // Un solo ciclo para renderizar todo
         datos.forEach(user => {
             contenedor.innerHTML += `
                 <div class="tarjeta-usuario" style="border-bottom: 1px solid #ccc; margin-bottom: 10px;">
@@ -31,10 +33,10 @@ btnAccion.addEventListener('click', async () => {
     }
 });
 
-// 3. Función global para eliminar (debe estar fuera del addEventListener para que el botón la encuentre)
+// 4. Función global para eliminar
 async function eliminarUsuario(id) {
     try {
-        const respuesta = await fetch(`http://localhost:3000/eliminar/${id}`, { method: 'DELETE' });
+        const respuesta = await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
         if (respuesta.ok) {
             alert("Usuario eliminado");
             btnAccion.click(); // Recargar la vista automáticamente
@@ -44,7 +46,7 @@ async function eliminarUsuario(id) {
     }
 }
 
-// 4. Evento para guardar nuevos datos
+// 5. Evento para guardar nuevos datos
 btnGuardar.addEventListener('click', async () => {
     const nombre = document.getElementById('nombre').value;
     const rol = document.getElementById('rol').value;
@@ -52,7 +54,7 @@ btnGuardar.addEventListener('click', async () => {
     if (!nombre) return alert("Por favor, escribe un nombre.");
 
     try {
-        const respuesta = await fetch('http://localhost:3000/guardar', {
+        const respuesta = await fetch(`${API_URL}/guardar`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nombre, rol })
@@ -68,27 +70,30 @@ btnGuardar.addEventListener('click', async () => {
     }
 });
 
+// 6. Evento para buscar
 btnBuscar.addEventListener('click', async () => {
-const termino = document.getElementById('input-buscar').value;
-if (!termino) return alert("Ingresa un término de búsqueda");
-try {
-const respuesta = await fetch(`http://localhost:3000/buscar/${termino}`);
-const resultados = await respuesta.json();
-const contenedor = document.getElementById('contenedor-datos');
-contenedor.innerHTML = `<h4>Resultados de: "${termino}"</h4>`;
-if (resultados.length === 0) {
-contenedor.innerHTML += "<p>No se encontraron coincidencias.</p>";
-}
-resultados.forEach(user => {
-contenedor.innerHTML += `
-<div class="tarjeta-usuario" style="border-left-color: #ffc107;">
-<h3>${user.nombre}</h3>
-<p>Rol: ${user.rol}</p>
-<button class="btn-borrar" onclick="eliminarUsuario('${user._id}')">Eliminar</button>
-</div>
-`;
-});
-} catch (error) {
-console.error("Error en la consulta:", error);
-}
+    const termino = document.getElementById('input-buscar').value;
+    if (!termino) return alert("Ingresa un término de búsqueda");
+    
+    try {
+        const respuesta = await fetch(`${API_URL}/buscar/${termino}`);
+        const resultados = await respuesta.json();
+        
+        contenedor.innerHTML = `<h4>Resultados de: "${termino}"</h4>`;
+        if (resultados.length === 0) {
+            contenedor.innerHTML += "<p>No se encontraron coincidencias.</p>";
+        }
+        
+        resultados.forEach(user => {
+            contenedor.innerHTML += `
+                <div class="tarjeta-usuario" style="border-left: 5px solid #ffc107; padding-left: 10px;">
+                    <h3>${user.nombre}</h3>
+                    <p>Rol: ${user.rol}</p>
+                    <button class="btn-borrar" onclick="eliminarUsuario('${user._id}')">Eliminar</button>
+                </div>
+            `;
+        });
+    } catch (error) {
+        console.error("Error en la consulta:", error);
+    }
 });
