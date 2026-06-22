@@ -45,23 +45,27 @@
         const formulario = document.getElementById('uploadForm');
 
         // Función para renderizar tarjetas
-        function renderizar(datos) {
+function renderizar(datos) {
     const contenedor = document.getElementById('contenedor-datos');
-    contenedor.innerHTML = datos.length ? "" : "<p class='text-center'>No hay datos.</p>";
-    
-    datos.forEach(item => {
-        // Aquí verificamos si existe 'imagenUrl' y construimos la ruta completa
-        const imagenSrc = item.imagenUrl ? `${API_URL}/${item.imagenUrl}` : null;
+        contenedor.innerHTML = "";
+
+        datos.forEach(item => {
+// Log para ver qué estamos intentando cargar
+        console.log("Ruta de imagen intentada:", item.imagenUrl);
+
+// Si tienes imagenUrl, la usamos; si no, dejamos vacío
+        const imagenHTML = item.imagenUrl ? 
+        `<img src="${API_URL}/${item.imagenUrl}" class="w-full h-48 object-cover mb-2 rounded" onerror="this.style.display='none'">` : '';
 
         contenedor.innerHTML += `
-            <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400">
-                ${imagenSrc ? `<img src="${imagenSrc}" class="w-full h-48 object-cover mb-2 rounded" alt="Imagen">` : ''}
-                <h3 class="font-bold text-lg">${item.titulo || item.nombre}</h3>
-                <p class="text-gray-300">${item.descripcion || item.rol}</p>
-                <div class="mt-3 flex gap-2">
-                    <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
-                </div>
-            </div>`;
+        <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400">
+        ${imagenHTML}
+        <h3 class="font-bold text-lg">${item.titulo || item.nombre}</h3>
+        <p class="text-gray-300">${item.descripcion || item.rol}</p>
+        <div class="mt-3 flex gap-2">
+        <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
+        /div>
+        </div>`;
     });
 }
 
