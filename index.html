@@ -5,193 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor Multimedia NoSQL</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #1a1a1a; color: #e5e7eb; }
+        .bg-card { background-color: #2a2a2a; }
+        .text-purple-custom { color: #c084fc; }
+        .btn-cyan { background-color: #00e5ff; color: #000; font-weight: 700; }
+        .btn-cyan:hover { background-color: #00b8cc; }
+    </style>
 </head>
-<body class="bg-gray-100 p-8">
+<body class="p-8 min-h-screen font-sans">
 
-    <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Gestor Multimedia</h2>
-        
-        <form id="uploadForm" class="space-y-4">
-            <div>
-                <label class="block font-medium text-gray-700">Título:</label>
-                <input type="text" id="nombre" name="titulo" class="w-full border p-2 rounded focus:ring focus:ring-blue-200 outline-none" required>
-            </div>
-            <div>
-                <label class="block font-medium text-gray-700">Rol / Descripción:</label>
-                <input type="text" id="rol" name="descripcion" class="w-full border p-2 rounded focus:ring focus:ring-blue-200 outline-none" required>
-            </div>
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-purple-custom">Gestor Multimedia NoSQL</h1>
+
+        <div class="bg-card p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-bold mb-4 text-purple-custom">Subir Elemento Multimedia</h2>
             
-            <button type="submit" id="btn-guardar" class="bg-blue-600 text-white px-4 py-2 rounded w-full hover:bg-blue-700 transition-colors">
-                Guardar en la Nube
-            </button>
-        </form>
-
-        <hr class="my-6">
-
-        <div class="flex gap-2 mb-4">
-            <button id="btn-accion" class="bg-green-600 hover:bg-green-700 transition-colors text-white px-4 py-2 rounded whitespace-nowrap">Cargar Todos</button>
-            <input type="text" id="input-buscar" placeholder="Buscar..." class="border p-2 rounded flex-grow focus:ring focus:ring-yellow-200 outline-none">
-            <button id="btn-buscar" class="bg-yellow-500 hover:bg-yellow-600 transition-colors text-white px-4 py-2 rounded">Buscar</button>
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label class="block font-medium mb-1">Título del Elemento:</label>
+                    <input type="text" name="titulo" required class="w-full p-2 rounded text-black outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Descripción:</label>
+                    <textarea name="descripcion" class="w-full p-2 rounded text-black outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Imagen (PNG/JPG):</label>
+                    <input type="file" name="imagen" accept="image/*" class="w-full p-2 bg-gray-700 rounded text-sm">
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Audio (MP3/WAV):</label>
+                    <input type="file" name="audio" accept="audio/*" class="w-full p-2 bg-gray-700 rounded text-sm">
+                </div>
+                
+                <button type="submit" id="btn-guardar" class="btn-cyan w-full py-2 rounded mt-2">Guardar en la Nube</button>
+            </form>
         </div>
 
         <div id="contenedor-datos" class="space-y-4"></div>
     </div>
 
     <script>
-        // Asegúrate de que esta URL sea la correcta de tu backend en Render
-        const API_URL = "https://inventario-multimedia.onrender.com";
-
-        const btnAccion = document.getElementById('btn-accion');
-        const btnBuscar = document.getElementById('btn-buscar');
-        const contenedor = document.getElementById('contenedor-datos');
         const formulario = document.getElementById('uploadForm');
-
-        // Función para prevenir XSS
-        const escaparHTML = (str) => {
-            if (!str) return '';
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag])
-            );
-        };
-
-        function renderizar(datos) {
-            contenedor.innerHTML = "";
-            if (datos.length === 0) {
-                contenedor.innerHTML = "<p class='text-gray-500 text-center'>No hay datos para mostrar.</p>";
-                return;
-            }
-
-            datos.forEach(user => {
-                // Adaptamos para leer 'titulo' o 'nombre' dependiendo de cómo lo devuelva tu backend
-                const nombreSeguro = escaparHTML(user.titulo || user.nombre);
-                const rolSeguro = escaparHTML(user.descripcion || user.rol);
-                const idSeguro = escaparHTML(user._id);
-
-                contenedor.innerHTML += `
-                    <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400 text-white shadow">
-                        <h3 class="font-bold text-lg">${nombreSeguro}</h3>
-                        <p class="text-gray-200">Rol/Desc: ${rolSeguro}</p>
-                        <p class="text-xs text-gray-400 mt-1">ID: ${idSeguro}</p>
-                        <div class="mt-3 flex gap-2">
-                            <button onclick="editarUsuario('${idSeguro}', '${nombreSeguro}', '${rolSeguro}')" class="bg-purple-600 hover:bg-purple-700 transition-colors px-3 py-1 rounded text-sm">Editar</button>
-                            <button onclick="eliminarUsuario('${idSeguro}')" class="bg-red-600 hover:bg-red-700 transition-colors px-3 py-1 rounded text-sm">Borrar</button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // Cargar todos los datos
-        btnAccion.addEventListener('click', async () => {
-            try {
-                contenedor.innerHTML = "<p class='text-gray-500 text-center'>Cargando...</p>";
-                const res = await fetch(`${API_URL}/datos`);
-                if (!res.ok) throw new Error('Error al cargar los datos');
-                renderizar(await res.json());
-            } catch (error) {
-                console.error(error);
-                contenedor.innerHTML = "<p class='text-red-500 text-center'>Error de conexión con el servidor.</p>";
-            }
-        });
-
-        // Guardar nuevo registro (Interceptando el formulario)
+        
         formulario.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Evita que la página recargue o se vaya a blanco
+            e.preventDefault(); // ¡La magia para que no se vaya a blanco!
+
+            const btn = document.getElementById('btn-guardar');
+            btn.innerText = "Subiendo...";
+            btn.disabled = true;
 
             const formData = new FormData(e.target);
-            
-            try {
-                // Deshabilitar el botón mientras guarda para evitar dobles clics
-                const btnGuardar = document.getElementById('btn-guardar');
-                btnGuardar.innerText = "Guardando...";
-                btnGuardar.disabled = true;
 
-                const res = await fetch(`${API_URL}/guardar`, {
+            try {
+                // Asegúrate de que esta ruta coincida con la que definimos en tu server.js
+                const res = await fetch('https://inventario-multimedia.onrender.com/guardar', {
                     method: 'POST',
-                    body: formData // Enviamos FormData directamente
+                    body: formData
                 });
+
+                if (!res.ok) throw new Error('Error al subir');
                 
-                if (!res.ok) throw new Error('Error al guardar');
-                
-                e.target.reset(); // Limpia los inputs del formulario
-                btnAccion.click(); // Recarga la lista
-                
-            } catch (error) {
-                alert("Hubo un problema al guardar los datos.");
-                console.error(error);
+                alert('¡Archivo guardado con éxito!');
+                formulario.reset();
+            } catch (err) {
+                alert('Error al guardar: ' + err.message);
             } finally {
-                // Restaurar el botón
-                const btnGuardar = document.getElementById('btn-guardar');
-                btnGuardar.innerText = "Guardar en la Nube";
-                btnGuardar.disabled = false;
+                btn.innerText = "Guardar en la Nube";
+                btn.disabled = false;
             }
         });
-
-        // Eliminar registro
-        async function eliminarUsuario(id) {
-            if (!confirm("¿Estás seguro de que deseas eliminar este registro?")) return;
-            try {
-                const res = await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error('Error al eliminar');
-                btnAccion.click();
-            } catch (error) {
-                alert("Hubo un problema al eliminar el registro.");
-                console.error(error);
-            }
-        }
-
-        // Editar registro
-        async function editarUsuario(id, nombreActual, rolActual) {
-            const nuevoNombre = prompt("Edita el título:", nombreActual);
-            if (nuevoNombre === null) return;
-
-            const nuevoRol = prompt("Edita la descripción:", rolActual);
-            if (nuevoRol === null) return;
-
-            if (nuevoNombre.trim() && nuevoRol.trim()) {
-                try {
-                    const res = await fetch(`${API_URL}/actualizar/${id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ titulo: nuevoNombre.trim(), descripcion: nuevoRol.trim() })
-                    });
-                    if (!res.ok) throw new Error('Error al actualizar');
-                    btnAccion.click();
-                } catch (error) {
-                    alert("Hubo un problema al actualizar el registro.");
-                    console.error(error);
-                }
-            } else {
-                alert("Los campos no pueden estar vacíos.");
-            }
-        }
-
-        // Buscar
-        btnBuscar.addEventListener('click', async () => {
-            const term = document.getElementById('input-buscar').value.trim();
-            if (!term) {
-                btnAccion.click();
-                return;
-            }
-            try {
-                contenedor.innerHTML = "<p class='text-gray-500 text-center'>Buscando...</p>";
-                const res = await fetch(`${API_URL}/buscar/${term}`);
-                if (!res.ok) throw new Error('Error en la búsqueda');
-                renderizar(await res.json());
-            } catch (error) {
-                console.error(error);
-                contenedor.innerHTML = "<p class='text-red-500 text-center'>Error al realizar la búsqueda.</p>";
-            }
-        });
-
-        // Carga inicial
-        document.addEventListener('DOMContentLoaded', () => btnAccion.click());
     </script>
 </body>
 </html>
