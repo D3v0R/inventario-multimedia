@@ -1,47 +1,49 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor Multimedia NoSQL</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 p-8">
+const express = require('express');
+const mongoose = require('mongoose');
+const multer = require('multer');
+const path = require('path');
+require('dotenv').config();
 
-    <div class="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-bold mb-4 text-gray-800">Subir Elemento a la Base de Datos NoSQL</h2>
-        
-        <form action="/api/multimedia" method="POST" enctype="multipart/form-data" class="space-y-4">
-            <div>
-                <label class="block font-medium">Título del Elemento:</label>
-                <input type="text" name="titulo" required class="w-full border p-2 rounded">
-            </div>
+const Multimedia = require('./models/Multimedia');
+const app = express();
 
-            <div>
-                <label class="block font-medium">Descripción:</label>
-                <textarea name="descripcion" class="w-full border p-2 rounded"></textarea>
-            </div>
+// Configuración de Multer para guardar archivos en una carpeta 'uploads'
+const storage = multer.diskStorage({
+    destination: './uploads/',
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
-            <div>
-                <label class="block font-medium">Seleccionar Imagen (PNG/JPG):</label>
-                <input type="file" name="imagen" accept="image/*" required class="w-full">
-            </div>
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads')); // Para poder ver los archivos
 
-            <div>
-                <label class="block font-medium">Seleccionar Audio (MP3/WAV):</label>
-                <input type="file" name="audio" accept="audio/*" class="w-full">
-            </div>
+// Conexión DB
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log("Conectado a MongoDB"));
 
-            <div>
-                <label class="block font-medium">Seleccionar Video (MP4/AVI/MOV):</label>
-                <input type="file" name="video" accept="video/*" class="w-full">
-            </div>
+// Ruta para recibir el formulario
+app.post('/api/multimedia', upload.fields([
+    { name: 'imagen', maxCount: 1 },
+    { name: 'audio', maxCount: 1 },
+    { name: 'video', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const nuevoElemento = new Multimedia({
+            titulo: req.body.titulo,
+            descripcion: req.body.descripcion,
+            imagenUrl: req.files['imagen'] ? req.files['imagen'][0].path : '',
+            audioUrl: req.files['audio'] ? req.files['audio'][0].path : '',
+            videoUrl: req.files['video'] ? req.files['video'][0].path : ''
+        });
 
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
-                Guardar en la Nube
-            </button>
-        </form>
-    </div>
+        await nuevoElemento.save();
+        res.send('Elemento guardado con éxito');
+    } catch (error) {
+        res.status(500).send('Error al guardar: ' + error.message);
+    }
+});
 
-</body>
-</html>
+app.listen(3000, () => console.log('Servidor en puerto 3000'));
