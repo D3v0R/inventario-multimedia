@@ -4,8 +4,5 @@ node_modules/
 # Archivos de entorno
 .env
 
-# Archivos subidos (tus fotos/videos)
-uploads/
-
 # Otros
 .DS_Store
