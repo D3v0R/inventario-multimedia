@@ -29,14 +29,19 @@ const upload = multer({ dest: 'uploads/' });
 // CREATE: Ahora es flexible con los archivos
 app.post('/guardar', upload.any(), async (req, res) => {
     try {
-        // Obtenemos la ruta del primer archivo subido si existe
-        const rutaImagen = req.files && req.files.length > 0 ? req.files[0].path : null;
+        // Buscamos si hay archivo de tipo imagen
+        const imagenSubida = req.files.find(f => f.mimetype.startsWith('image/'));
 
         const nuevo = new Multimedia({
             titulo: req.body.titulo,
             descripcion: req.body.descripcion,
-            imagenUrl: rutaImagen // Guardamos la ruta explícitamente
+            archivos: {
+                imagen: imagenSubida ? imagenSubida.path : null,
+                audio: null,
+                video: null
+            }
         });
+
         await nuevo.save();
         res.status(201).json(nuevo);
     } catch (err) {

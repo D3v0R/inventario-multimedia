@@ -51,18 +51,17 @@ function renderizar(datos) {
     contenedor.innerHTML = datos.length ? "" : "<p class='text-center'>No hay datos.</p>";
     
     datos.forEach(item => {
-        // Si existe imagenUrl, mostramos la etiqueta <img>
-        const imagenHTML = item.imagenUrl ? 
-            `<img src="${API_URL}/${item.imagenUrl}" class="w-full h-48 object-cover mb-2 rounded" alt="Imagen">` : '';
+        // Accedemos a la ruta dentro del objeto 'archivos'
+        const rutaImagen = item.archivos && item.archivos.imagen ? item.archivos.imagen : null;
+        const imagenHTML = rutaImagen ? 
+            `<img src="${API_URL}/${rutaImagen}" class="w-full h-48 object-cover mb-2 rounded" alt="Imagen">` : '';
 
         contenedor.innerHTML += `
             <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400 mb-4">
                 ${imagenHTML}
                 <h3 class="font-bold text-lg">${item.titulo}</h3>
                 <p class="text-gray-300">${item.descripcion}</p>
-                <div class="mt-3">
-                    <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
-                </div>
+                <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
             </div>`;
     });
 }
