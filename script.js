@@ -1,4 +1,4 @@
-const API_URL = "https://inventario-backend-lwvi.onrender.com";
+const API_URL = "https://inventario-multimedia.onrender.com";
 
 // Evento para el Formulario (Guardar con archivos)
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
