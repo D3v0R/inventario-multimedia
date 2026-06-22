@@ -1,24 +1,40 @@
 const express = require('express');
 const multer = require('multer');
-const Multimedia = require('./models/Multimedia'); // Asegúrate de que este modelo tenga los campos 'nombre' y 'rol'
-const router = express.Router();
+const cors = require('cors'); // Vital para que el frontend pueda hablar con este backend
+const mongoose = require('mongoose'); // Necesario para conectar a la base de datos
+const Multimedia = require('./models/Multimedia');
+
+// 1. INICIALIZAMOS EL MOTOR DEL SERVIDOR
+const app = express();
+
+// 2. MIDDLEWARES (Configuraciones base)
+app.use(cors()); // Permite peticiones desde tu archivo HTML
+app.use(express.json()); // Permite entender los datos en formato JSON
+
+// 3. CONEXIÓN A LA BASE DE DATOS (Asegúrate de poner tu URL real)
+const MONGO_URI = process.env.MONGO_URI || "AQUI_VA_TU_URL_DE_MONGODB_ATLAS";
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("✅ Conectado a la base de datos MongoDB"))
+    .catch((err) => console.error("❌ Error al conectar a MongoDB:", err));
 
 // Configuración de almacenamiento local
 const upload = multer({ dest: 'uploads/' });
 
-// CREATE: Subir nuevo archivo (Alineado a la ruta /guardar del HTML)
-router.post('/guardar', upload.fields([
+// ==========================================
+// TUS RUTAS (Cambiamos 'router' por 'app')
+// ==========================================
+
+// CREATE: Subir nuevo archivo 
+app.post('/guardar', upload.fields([
     { name: 'imagen', maxCount: 1 },
     { name: 'audio', maxCount: 1 },
     { name: 'video', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        // Adaptado para aceptar 'nombre' y 'rol' (del HTML) o 'titulo' y 'descripcion'
         const nuevoElemento = new Multimedia({
             nombre: req.body.nombre || req.body.titulo,
             rol: req.body.rol || req.body.descripcion,
             archivos: {
-                // Validación para evitar errores si req.files viene vacío
                 imagen: req.files && req.files.imagen ? req.files.imagen[0].path : null,
                 audio: req.files && req.files.audio ? req.files.audio[0].path : null,
                 video: req.files && req.files.video ? req.files.video[0].path : null
@@ -31,8 +47,8 @@ router.post('/guardar', upload.fields([
     }
 });
 
-// READ: Obtener todos los elementos (Alineado a la ruta /datos del HTML)
-router.get('/datos', async (req, res) => {
+// READ: Obtener todos los elementos
+app.get('/datos', async (req, res) => {
     try {
         const elementos = await Multimedia.find();
         res.json(elementos);
@@ -41,8 +57,8 @@ router.get('/datos', async (req, res) => {
     }
 });
 
-// UPDATE: Actualizar elemento (Alineado a la ruta /actualizar/:id del HTML)
-router.put('/actualizar/:id', async (req, res) => {
+// UPDATE: Actualizar elemento
+app.put('/actualizar/:id', async (req, res) => {
     try {
         const actualizado = await Multimedia.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!actualizado) {
@@ -54,8 +70,8 @@ router.put('/actualizar/:id', async (req, res) => {
     }
 });
 
-// DELETE: Borrar elemento (Alineado a la ruta /eliminar/:id del HTML)
-router.delete('/eliminar/:id', async (req, res) => {
+// DELETE: Borrar elemento
+app.delete('/eliminar/:id', async (req, res) => {
     try {
         const eliminado = await Multimedia.findByIdAndDelete(req.params.id);
         if (!eliminado) {
@@ -67,10 +83,10 @@ router.delete('/eliminar/:id', async (req, res) => {
     }
 });
 
-// SEARCH: Buscar elementos (Alineado a la ruta /buscar/:term del HTML)
-router.get('/buscar/:term', async (req, res) => {
+// SEARCH: Buscar elementos
+app.get('/buscar/:term', async (req, res) => {
     try {
-        const regex = new RegExp(req.params.term, 'i'); // Búsqueda insensible a mayúsculas/minúsculas
+        const regex = new RegExp(req.params.term, 'i');
         const resultados = await Multimedia.find({
             $or: [
                 { nombre: regex }, 
@@ -85,4 +101,11 @@ router.get('/buscar/:term', async (req, res) => {
     }
 });
 
-module.exports = router;
+// ==========================================
+// 4. ENCENDER EL SERVIDOR (LA PARTE QUE FALTABA)
+// ==========================================
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor encendido y escuchando en el puerto ${PORT}`);
+});
