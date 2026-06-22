@@ -1,32 +1,30 @@
 const express = require('express');
 const multer = require('multer');
-const cors = require('cors'); // Vital para que el frontend pueda hablar con este backend
-const mongoose = require('mongoose'); // Necesario para conectar a la base de datos
+const cors = require('cors');
+const mongoose = require('mongoose');
+const path = require('path'); // <--- IMPORTANTE: Agregamos path para servir archivos
 const Multimedia = require('./models/Multimedia');
 
-// 1. INICIALIZAMOS EL MOTOR DEL SERVIDOR
 const app = express();
 
-// 2. MIDDLEWARES (Configuraciones base)
-app.use(cors()); // Permite peticiones desde tu archivo HTML
-app.use(express.json()); // Permite entender los datos en formato JSON
+// Middlewares
+app.use(cors());
+app.use(express.json());
 
 // 3. CONEXIÓN A LA BASE DE DATOS
-const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI; 
+// Usamos el nombre exacto que configuraste en Render: MONGODB_URI
+const MONGO_URI = process.env.MONGODB_URI; 
+
 mongoose.connect(MONGO_URI)
     .then(() => console.log("✅ Conectado a la base de datos MongoDB"))
     .catch((err) => {
         console.error("❌ Error CRÍTICO al conectar a MongoDB:", err);
-        process.exit(1); // Esto ayuda a Render a entender que falló y reiniciar
+        process.exit(1);
     });
-// Configuración de almacenamiento local
+
 const upload = multer({ dest: 'uploads/' });
 
-// ==========================================
-// TUS RUTAS (Cambiamos 'router' por 'app')
-// ==========================================
-
-// CREATE: Subir nuevo archivo 
+// --- RUTAS DE LA API ---
 app.post('/guardar', upload.fields([
     { name: 'imagen', maxCount: 1 },
     { name: 'audio', maxCount: 1 },
@@ -49,53 +47,38 @@ app.post('/guardar', upload.fields([
     }
 });
 
-// READ: Obtener todos los elementos
 app.get('/datos', async (req, res) => {
     try {
         const elementos = await Multimedia.find();
         res.json(elementos);
     } catch (err) {
-        res.status(500).json({ error: "Error al obtener los datos de la base de datos." });
+        res.status(500).json({ error: "Error al obtener los datos." });
     }
 });
 
-// UPDATE: Actualizar elemento
 app.put('/actualizar/:id', async (req, res) => {
     try {
         const actualizado = await Multimedia.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!actualizado) {
-            return res.status(404).json({ error: "Elemento no encontrado." });
-        }
         res.json(actualizado);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
-// DELETE: Borrar elemento
 app.delete('/eliminar/:id', async (req, res) => {
     try {
-        const eliminado = await Multimedia.findByIdAndDelete(req.params.id);
-        if (!eliminado) {
-            return res.status(404).json({ error: "Elemento no encontrado." });
-        }
-        res.json({ message: "Elemento eliminado correctamente" });
+        await Multimedia.findByIdAndDelete(req.params.id);
+        res.json({ message: "Eliminado correctamente" });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
 });
 
-// SEARCH: Buscar elementos
 app.get('/buscar/:term', async (req, res) => {
     try {
         const regex = new RegExp(req.params.term, 'i');
         const resultados = await Multimedia.find({
-            $or: [
-                { nombre: regex }, 
-                { rol: regex },
-                { titulo: regex },
-                { descripcion: regex }
-            ]
+            $or: [{ nombre: regex }, { rol: regex }, { titulo: regex }, { descripcion: regex }]
         });
         res.json(resultados);
     } catch (err) {
@@ -103,15 +86,16 @@ app.get('/buscar/:term', async (req, res) => {
     }
 });
 
-// ==========================================
-// 4. ENCENDER EL SERVIDOR (LA PARTE QUE FALTABA)
-// ==========================================
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`🚀 Servidor encendido y escuchando en el puerto ${PORT}`);
-});
+// --- RUTA PARA SERVIR TU PÁGINA WEB ---
+// Esto hace que cuando entres a la URL de Render, veas tu index.html
+app.use(express.static(path.join(__dirname))); 
 
 app.get('/', (req, res) => {
-    res.send('¡El backend del Gestor Multimedia está encendido y funcionando al 100%!');
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ENCENDIDO
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor encendido en puerto ${PORT}`);
 });
