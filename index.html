@@ -46,18 +46,27 @@
 
         // Función para renderizar tarjetas
         function renderizar(datos) {
-            contenedor.innerHTML = datos.length ? "" : "<p class='text-center'>No hay datos.</p>";
-            datos.forEach(item => {
-                contenedor.innerHTML += `
-                    <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400">
-                        <h3 class="font-bold text-lg">${item.titulo || item.nombre}</h3>
-                        <p class="text-gray-300">${item.descripcion || item.rol}</p>
-                        <div class="mt-3 flex gap-2">
-                            <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
-                        </div>
-                    </div>`;
-            });
-        }
+    const contenedor = document.getElementById('contenedor-datos');
+    contenedor.innerHTML = datos.length ? "" : "<p class='text-center'>No hay datos.</p>";
+    
+    datos.forEach(item => {
+        // Asumimos que item.archivos contiene la ruta (ej. 'uploads/foto.jpg')
+        // Si no tienes el campo archivos, ajusta según tu modelo
+        const imagenSrc = item.archivos && item.archivos.length > 0 
+                          ? `${API_URL}/${item.archivos[0]}` 
+                          : null;
+
+        contenedor.innerHTML += `
+            <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400">
+                ${imagenSrc ? `<img src="${imagenSrc}" class="w-full h-48 object-cover mb-2 rounded" alt="Imagen">` : ''}
+                <h3 class="font-bold text-lg">${item.titulo || item.nombre}</h3>
+                <p class="text-gray-300">${item.descripcion || item.rol}</p>
+                <div class="mt-3 flex gap-2">
+                    <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
+                </div>
+            </div>`;
+    });
+}
 
         // CRUD: Create (Actualizado para enviar JSON)
 formulario.addEventListener('submit', async (e) => {
