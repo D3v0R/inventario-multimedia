@@ -27,26 +27,28 @@ const upload = multer({ dest: 'uploads/' });
 // --- RUTAS DE LA API ---
 
 // CREATE: Ahora es flexible con los archivos
-app.post('/guardar', upload.any(), async (req, res) => {
+// Ruta GUARDAR (Soporta Imagen y Audio)
+app.post('/guardar', upload.fields([{ name: 'imagen' }, { name: 'audio' }]), async (req, res) => {
     try {
-        // Buscamos si hay archivo de tipo imagen
-        const imagenSubida = req.files.find(f => f.mimetype.startsWith('image/'));
-
         const nuevo = new Multimedia({
             titulo: req.body.titulo,
             descripcion: req.body.descripcion,
             archivos: {
-                imagen: imagenSubida ? imagenSubida.path : null,
-                audio: null,
-                video: null
+                imagen: req.files['imagen'] ? req.files['imagen'][0].path : null,
+                audio: req.files['audio'] ? req.files['audio'][0].path : null
             }
         });
-
         await nuevo.save();
         res.status(201).json(nuevo);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+    } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// Ruta EDITAR
+app.put('/actualizar/:id', async (req, res) => {
+    try {
+        const actualizado = await Multimedia.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(actualizado);
+    } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
 app.get('/datos', async (req, res) => {

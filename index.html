@@ -23,17 +23,26 @@
             <form id="uploadForm" class="space-y-4">
                 <input type="text" name="titulo" placeholder="Título" required class="w-full p-2 rounded text-black outline-none">
                 <textarea name="descripcion" placeholder="Descripción" class="w-full p-2 rounded text-black outline-none"></textarea>
-                <div class="text-sm">
-                    <label>Imagen:</label> <input type="file" name="imagen" accept="image/*">
+                
+                <div class="text-sm bg-gray-800 p-3 rounded">
+                    <div class="mb-2">
+                        <label class="font-bold text-gray-300">Imagen:</label> 
+                        <input type="file" name="imagen" accept="image/*" class="ml-2 text-gray-400">
+                    </div>
+                    <div>
+                        <label class="font-bold text-gray-300">Audio:</label> 
+                        <input type="file" name="audio" accept="audio/*" class="ml-4 text-gray-400">
+                    </div>
                 </div>
+                
                 <button type="submit" id="btn-guardar" class="btn-cyan w-full py-2 rounded">Guardar en la Nube</button>
             </form>
         </div>
 
         <div class="flex gap-2 mb-4">
-            <button id="btn-accion" class="bg-green-600 px-4 py-2 rounded">Cargar Todos</button>
-            <input type="text" id="input-buscar" placeholder="Buscar..." class="p-2 rounded flex-grow text-black">
-            <button id="btn-buscar" class="bg-yellow-500 px-4 py-2 rounded text-black">Buscar</button>
+            <button id="btn-accion" class="bg-green-600 px-4 py-2 rounded font-bold">Cargar Todos</button>
+            <input type="text" id="input-buscar" placeholder="Buscar..." class="p-2 rounded flex-grow text-black outline-none">
+            <button id="btn-buscar" class="bg-yellow-500 px-4 py-2 rounded text-black font-bold">Buscar</button>
         </div>
 
         <div id="contenedor-datos" class="space-y-4"></div>
@@ -44,64 +53,96 @@
         const contenedor = document.getElementById('contenedor-datos');
         const formulario = document.getElementById('uploadForm');
 
-        // Función para renderizar tarjetas
-// Asegúrate de que tu función renderizar sea exactamente así:
-function renderizar(datos) {
-    const contenedor = document.getElementById('contenedor-datos');
-    contenedor.innerHTML = datos.length ? "" : "<p class='text-center'>No hay datos.</p>";
-    
-    datos.forEach(item => {
-        // Accedemos a la ruta dentro del objeto 'archivos'
-        const rutaImagen = item.archivos && item.archivos.imagen ? item.archivos.imagen : null;
-        const imagenHTML = rutaImagen ? 
-            `<img src="${API_URL}/${rutaImagen}" class="w-full h-48 object-cover mb-2 rounded" alt="Imagen">` : '';
+        // Función para renderizar tarjetas (Ahora con Imagen, Audio y Editar)
+        function renderizar(datos) {
+            contenedor.innerHTML = datos.length ? "" : "<p class='text-center text-gray-400'>No hay datos guardados aún.</p>";
+            
+            datos.forEach(item => {
+                // Rutas de archivos
+                const rutaImagen = item.archivos && item.archivos.imagen ? item.archivos.imagen : null;
+                const rutaAudio = item.archivos && item.archivos.audio ? item.archivos.audio : null;
+                
+                // Elementos HTML
+                const imagenHTML = rutaImagen ? `<img src="${API_URL}/${rutaImagen}" class="w-full h-48 object-cover mb-2 rounded" alt="Imagen">` : '';
+                const audioHTML = rutaAudio ? `<audio controls class="w-full mt-3"><source src="${API_URL}/${rutaAudio}"></audio>` : '';
 
-        contenedor.innerHTML += `
-            <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400 mb-4">
-                ${imagenHTML}
-                <h3 class="font-bold text-lg">${item.titulo}</h3>
-                <p class="text-gray-300">${item.descripcion}</p>
-                <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
-            </div>`;
-    });
-}
+                contenedor.innerHTML += `
+                    <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400 mb-4 shadow-lg">
+                        ${imagenHTML}
+                        <h3 class="font-bold text-xl text-white">${item.titulo}</h3>
+                        <p class="text-gray-400 mt-1">${item.descripcion}</p>
+                        ${audioHTML}
+                        <div class="mt-4 flex gap-2">
+                            <button onclick="editar('${item._id}', '${item.titulo}')" class="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded text-sm font-bold transition">Editar Título</button>
+                            <button onclick="eliminar('${item._id}')" class="bg-red-600 hover:bg-red-700 px-4 py-1 rounded text-sm font-bold transition">Borrar</button>
+                        </div>
+                    </div>`;
+            });
+        }
 
-        // CRUD: Create (Actualizado para enviar JSON)
-// CRUD: Create (CORRECTO para enviar archivos)
-formulario.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // 1. Creamos el FormData directamente del formulario
-    const formData = new FormData(e.target); 
-    
-    // 2. ENVIAMOS EL FORM DATA DIRECTAMENTE (sin JSON.stringify)
-    // Al no poner 'Content-Type' en los headers, el navegador pone el correcto automáticamente
-    const res = await fetch(`${API_URL}/guardar`, { 
-        method: 'POST', 
-        body: formData 
-    });
+        // CRUD: Create (Envía FormData con archivos)
+        formulario.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target); 
+            
+            try {
+                const res = await fetch(`${API_URL}/guardar`, { 
+                    method: 'POST', 
+                    body: formData 
+                });
 
-    if (res.ok) { 
-        formulario.reset(); 
-        document.getElementById('btn-accion').click(); 
-    } else {
-        alert("Error al guardar, revisa la consola.");
-    }
-});
+                if (res.ok) { 
+                    formulario.reset(); 
+                    document.getElementById('btn-accion').click(); 
+                } else {
+                    alert("Error al guardar en el servidor.");
+                }
+            } catch (err) {
+                console.error("Error de conexión:", err);
+            }
+        });
 
         // CRUD: Read
         document.getElementById('btn-accion').addEventListener('click', async () => {
-            const res = await fetch(`${API_URL}/datos`);
-            renderizar(await res.json());
+            try {
+                const res = await fetch(`${API_URL}/datos`);
+                renderizar(await res.json());
+            } catch (err) {
+                console.error("Error al cargar datos:", err);
+            }
         });
+
+        // CRUD: Update (Editar)
+        async function editar(id, tituloActual) {
+            const nuevoTitulo = prompt("Ingresa el nuevo título:", tituloActual);
+            
+            if (nuevoTitulo && nuevoTitulo.trim() !== "" && nuevoTitulo !== tituloActual) {
+                try {
+                    await fetch(`${API_URL}/actualizar/${id}`, { 
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ titulo: nuevoTitulo })
+                    });
+                    document.getElementById('btn-accion').click(); // Recargar datos
+                } catch (err) {
+                    console.error("Error al actualizar:", err);
+                }
+            }
+        }
 
         // CRUD: Delete
         async function eliminar(id) {
-            await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
-            document.getElementById('btn-accion').click();
+            if(confirm("¿Seguro que quieres borrar este elemento?")) {
+                try {
+                    await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
+                    document.getElementById('btn-accion').click(); // Recargar datos
+                } catch (err) {
+                    console.error("Error al eliminar:", err);
+                }
+            }
         }
 
-        // Carga inicial
+        // Carga inicial automática
         document.getElementById('btn-accion').click();
     </script>
 </body>
