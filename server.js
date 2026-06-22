@@ -29,16 +29,17 @@ const upload = multer({ dest: 'uploads/' });
 // CREATE: Ahora es flexible con los archivos
 app.post('/guardar', upload.any(), async (req, res) => {
     try {
-        const nuevoElemento = new Multimedia({
-            titulo: req.body.titulo || req.body.nombre,
-            descripcion: req.body.descripcion || req.body.rol,
-            // Guardamos las rutas si existen archivos
-            archivos: req.files ? req.files.map(f => f.path) : []
+        // Obtenemos la ruta del primer archivo subido si existe
+        const rutaImagen = req.files && req.files.length > 0 ? req.files[0].path : null;
+
+        const nuevo = new Multimedia({
+            titulo: req.body.titulo,
+            descripcion: req.body.descripcion,
+            imagenUrl: rutaImagen // Guardamos la ruta explícitamente
         });
-        await nuevoElemento.save();
-        res.status(201).json(nuevoElemento);
+        await nuevo.save();
+        res.status(201).json(nuevo);
     } catch (err) {
-        console.error("Error al guardar:", err);
         res.status(400).json({ error: err.message });
     }
 });
