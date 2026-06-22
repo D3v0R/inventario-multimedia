@@ -9,73 +9,77 @@
         body { background-color: #1a1a1a; color: #e5e7eb; }
         .bg-card { background-color: #2a2a2a; }
         .text-purple-custom { color: #c084fc; }
-        .btn-cyan { background-color: #00e5ff; color: #000; font-weight: 700; }
-        .btn-cyan:hover { background-color: #00b8cc; }
+        .btn-cyan { background-color: #06b6d4; color: white; font-weight: 700; }
+        .btn-cyan:hover { background-color: #0891b2; }
     </style>
 </head>
-<body class="p-8 min-h-screen font-sans">
+<body class="p-8 font-sans">
 
     <div class="max-w-2xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 text-purple-custom">Gestor Multimedia NoSQL</h1>
 
         <div class="bg-card p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-xl font-bold mb-4 text-purple-custom">Subir Elemento Multimedia</h2>
-            
+            <h2 class="text-xl font-bold mb-4 text-purple-custom">Subir Elemento</h2>
             <form id="uploadForm" class="space-y-4">
-                <div>
-                    <label class="block font-medium mb-1">Título del Elemento:</label>
-                    <input type="text" name="titulo" required class="w-full p-2 rounded text-black outline-none focus:ring-2 focus:ring-purple-500">
+                <input type="text" name="titulo" placeholder="Título" required class="w-full p-2 rounded text-black outline-none">
+                <textarea name="descripcion" placeholder="Descripción" class="w-full p-2 rounded text-black outline-none"></textarea>
+                <div class="text-sm">
+                    <label>Imagen:</label> <input type="file" name="imagen" accept="image/*">
                 </div>
-                <div>
-                    <label class="block font-medium mb-1">Descripción:</label>
-                    <textarea name="descripcion" class="w-full p-2 rounded text-black outline-none focus:ring-2 focus:ring-purple-500"></textarea>
-                </div>
-                <div>
-                    <label class="block font-medium mb-1">Imagen (PNG/JPG):</label>
-                    <input type="file" name="imagen" accept="image/*" class="w-full p-2 bg-gray-700 rounded text-sm">
-                </div>
-                <div>
-                    <label class="block font-medium mb-1">Audio (MP3/WAV):</label>
-                    <input type="file" name="audio" accept="audio/*" class="w-full p-2 bg-gray-700 rounded text-sm">
-                </div>
-                
-                <button type="submit" id="btn-guardar" class="btn-cyan w-full py-2 rounded mt-2">Guardar en la Nube</button>
+                <button type="submit" id="btn-guardar" class="btn-cyan w-full py-2 rounded">Guardar en la Nube</button>
             </form>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+            <button id="btn-accion" class="bg-green-600 px-4 py-2 rounded">Cargar Todos</button>
+            <input type="text" id="input-buscar" placeholder="Buscar..." class="p-2 rounded flex-grow text-black">
+            <button id="btn-buscar" class="bg-yellow-500 px-4 py-2 rounded text-black">Buscar</button>
         </div>
 
         <div id="contenedor-datos" class="space-y-4"></div>
     </div>
 
     <script>
+        const API_URL = "https://inventario-multimedia.onrender.com";
+        const contenedor = document.getElementById('contenedor-datos');
         const formulario = document.getElementById('uploadForm');
-        
+
+        // Función para renderizar tarjetas
+        function renderizar(datos) {
+            contenedor.innerHTML = datos.length ? "" : "<p class='text-center'>No hay datos.</p>";
+            datos.forEach(item => {
+                contenedor.innerHTML += `
+                    <div class="bg-gray-800 p-4 rounded-lg border-l-4 border-purple-400">
+                        <h3 class="font-bold text-lg">${item.titulo || item.nombre}</h3>
+                        <p class="text-gray-300">${item.descripcion || item.rol}</p>
+                        <div class="mt-3 flex gap-2">
+                            <button onclick="eliminar('${item._id}')" class="bg-red-600 px-3 py-1 rounded text-sm">Borrar</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // CRUD: Create
         formulario.addEventListener('submit', async (e) => {
-            e.preventDefault(); // ¡La magia para que no se vaya a blanco!
-
-            const btn = document.getElementById('btn-guardar');
-            btn.innerText = "Subiendo...";
-            btn.disabled = true;
-
-            const formData = new FormData(e.target);
-
-            try {
-                // Asegúrate de que esta ruta coincida con la que definimos en tu server.js
-                const res = await fetch('https://inventario-multimedia.onrender.com/guardar', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!res.ok) throw new Error('Error al subir');
-                
-                alert('¡Archivo guardado con éxito!');
-                formulario.reset();
-            } catch (err) {
-                alert('Error al guardar: ' + err.message);
-            } finally {
-                btn.innerText = "Guardar en la Nube";
-                btn.disabled = false;
-            }
+            e.preventDefault();
+            const res = await fetch(`${API_URL}/guardar`, { method: 'POST', body: new FormData(e.target) });
+            if (res.ok) { formulario.reset(); document.getElementById('btn-accion').click(); }
         });
+
+        // CRUD: Read
+        document.getElementById('btn-accion').addEventListener('click', async () => {
+            const res = await fetch(`${API_URL}/datos`);
+            renderizar(await res.json());
+        });
+
+        // CRUD: Delete
+        async function eliminar(id) {
+            await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
+            document.getElementById('btn-accion').click();
+        }
+
+        // Carga inicial
+        document.getElementById('btn-accion').click();
     </script>
 </body>
 </html>
