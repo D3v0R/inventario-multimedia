@@ -23,6 +23,7 @@ mongoose.connect(MONGO_URI)
 
 const upload = multer({ dest: 'uploads/' });
 
+// --- RUTA PARA GUARDAR ---
 app.post('/guardar', upload.fields([{ name: 'imagen' }, { name: 'audio' }]), async (req, res) => {
     try {
         const nuevo = new Multimedia({
@@ -38,6 +39,7 @@ app.post('/guardar', upload.fields([{ name: 'imagen' }, { name: 'audio' }]), asy
     } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
+// --- RUTA PARA OBTENER TODOS LOS DATOS ---
 app.get('/datos', async (req, res) => {
     try {
         const elementos = await Multimedia.find();
@@ -47,13 +49,41 @@ app.get('/datos', async (req, res) => {
     }
 });
 
-app.put('/actualizar/:id', async (req, res) => {
+// --- RUTA PARA ACTUALIZAR (Corregida con soporte para archivos) ---
+app.put('/actualizar/:id', upload.fields([{ name: 'imagen' }, { name: 'audio' }]), async (req, res) => {
     try {
-        const actualizado = await Multimedia.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        // 1. Buscamos el documento actual en la base de datos
+        const elemento = await Multimedia.findById(req.params.id);
+        if (!elemento) {
+            return res.status(404).json({ error: "Elemento no encontrado" });
+        }
+
+        // 2. Actualizamos los textos (si vienen en la petición)
+        if (req.body.titulo) elemento.titulo = req.body.titulo;
+        if (req.body.descripcion !== undefined) elemento.descripcion = req.body.descripcion;
+
+        // 3. Verificamos si se subieron archivos nuevos y los actualizamos
+        if (req.files) {
+            // Asegurarnos de que el objeto 'archivos' exista
+            if (!elemento.archivos) elemento.archivos = {};
+
+            if (req.files['imagen']) {
+                elemento.archivos.imagen = req.files['imagen'][0].path;
+            }
+            if (req.files['audio']) {
+                elemento.archivos.audio = req.files['audio'][0].path;
+            }
+        }
+
+        // 4. Guardamos los cambios
+        const actualizado = await elemento.save();
         res.json(actualizado);
-    } catch (err) { res.status(400).json({ error: err.message }); }
+    } catch (err) { 
+        res.status(400).json({ error: err.message }); 
+    }
 });
 
+// --- RUTA PARA ELIMINAR ---
 app.delete('/eliminar/:id', async (req, res) => {
     try {
         await Multimedia.findByIdAndDelete(req.params.id);
@@ -61,6 +91,7 @@ app.delete('/eliminar/:id', async (req, res) => {
     } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
+// --- RUTA PARA BUSCAR ---
 app.get('/buscar/:term', async (req, res) => {
     try {
         const regex = new RegExp(req.params.term, 'i');
@@ -71,10 +102,12 @@ app.get('/buscar/:term', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// --- RUTA PRINCIPAL (FRONT-END) ---
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// --- INICIO DEL SERVIDOR ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor encendido en puerto ${PORT}`);
