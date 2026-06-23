@@ -101,7 +101,6 @@
 
                 if (res.ok) { 
                     formulario.reset(); 
-                    // Reiniciar también los textos de los archivos
                     document.getElementById('texto-imagen').textContent = 'Ningún archivo';
                     document.getElementById('texto-audio').textContent = 'Ningún archivo';
                     document.getElementById('btn-accion').click(); 
@@ -119,6 +118,28 @@
                 renderizar(await res.json());
             } catch (err) {
                 console.error("Error al cargar datos:", err);
+            }
+        });
+
+        // --- FUNCIONALIDAD DEL BOTÓN DE BÚSQUEDA ---
+        document.getElementById('btn-buscar').addEventListener('click', async (e) => {
+            e.preventDefault(); 
+            const termino = document.getElementById('input-buscar').value.trim();
+            
+            if (termino === '') {
+                document.getElementById('btn-accion').click();
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/buscar/${termino}`);
+                
+                if (!res.ok) throw new Error("Error al conectar con el servidor");
+                
+                const datos = await res.json();
+                renderizar(datos); 
+            } catch (err) {
+                console.error("Fallo crítico en la búsqueda:", err);
             }
         });
 
