@@ -7,11 +7,11 @@ const Multimedia = require('./models/Multimedia');
 
 const app = express();
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname))); 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// 3. CONEXIÓN A LA BASE DE DATOS
 const MONGO_URI = process.env.MONGODB_URI; 
 
 mongoose.connect(MONGO_URI)
@@ -21,13 +21,8 @@ mongoose.connect(MONGO_URI)
         process.exit(1);
     });
 
-// USAMOS UPLOAD.ANY() PARA QUE NO RECHACE PETICIONES SI FALTA UN ARCHIVO
 const upload = multer({ dest: 'uploads/' });
 
-// --- RUTAS DE LA API ---
-
-// CREATE: Ahora es flexible con los archivos
-// Ruta GUARDAR (Soporta Imagen y Audio)
 app.post('/guardar', upload.fields([{ name: 'imagen' }, { name: 'audio' }]), async (req, res) => {
     try {
         const nuevo = new Multimedia({
@@ -40,14 +35,6 @@ app.post('/guardar', upload.fields([{ name: 'imagen' }, { name: 'audio' }]), asy
         });
         await nuevo.save();
         res.status(201).json(nuevo);
-    } catch (err) { res.status(400).json({ error: err.message }); }
-});
-
-// Ruta EDITAR
-app.put('/actualizar/:id', async (req, res) => {
-    try {
-        const actualizado = await Multimedia.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.json(actualizado);
     } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
@@ -64,18 +51,14 @@ app.put('/actualizar/:id', async (req, res) => {
     try {
         const actualizado = await Multimedia.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.json(actualizado);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+    } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
 app.delete('/eliminar/:id', async (req, res) => {
     try {
         await Multimedia.findByIdAndDelete(req.params.id);
         res.json({ message: "Eliminado correctamente" });
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
+    } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
 app.get('/buscar/:term', async (req, res) => {
@@ -85,22 +68,14 @@ app.get('/buscar/:term', async (req, res) => {
             $or: [{ nombre: regex }, { rol: regex }, { titulo: regex }, { descripcion: regex }]
         });
         res.json(resultados);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
-
-// --- RUTA PARA SERVIR TU PÁGINA WEB ---
-app.use(express.static(path.join(__dirname))); 
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ENCENDIDO
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor encendido en puerto ${PORT}`);
 });
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

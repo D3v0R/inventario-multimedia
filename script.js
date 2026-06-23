@@ -2,7 +2,6 @@ const API_URL = "https://inventario-multimedia.onrender.com";
 const contenedor = document.getElementById('contenedor-datos');
 const formulario = document.getElementById('uploadForm');
 
-// Función para renderizar las tarjetas multimedia (Imagen, Audio, Título, Descripción)
 function renderizar(datos) {
     contenedor.innerHTML = datos.length ? "" : "<p class='text-center text-gray-500 italic mt-8'>No se encontraron elementos.</p>";
     
@@ -27,14 +26,12 @@ function renderizar(datos) {
     });
 }
 
-// CRUD: Create (Subir con archivos usando FormData)
 formulario.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target); 
     
     try {
         const res = await fetch(`${API_URL}/guardar`, { method: 'POST', body: formData });
-
         if (res.ok) { 
             formulario.reset(); 
             document.getElementById('texto-imagen').textContent = 'Ningún archivo';
@@ -43,67 +40,52 @@ formulario.addEventListener('submit', async (e) => {
         } else {
             alert("Error al guardar en el servidor.");
         }
-    } catch (err) {
-        console.error("Error de conexión:", err);
-    }
+    } catch (err) { console.error("Error de conexión:", err); }
 });
 
-// CRUD: Read (Cargar todos los elementos)
 document.getElementById('btn-accion').addEventListener('click', async () => {
     try {
         const res = await fetch(`${API_URL}/datos`);
         renderizar(await res.json());
-    } catch (err) {
-        console.error("Error al cargar datos:", err);
-    }
+    } catch (err) { console.error("Error al cargar datos:", err); }
 });
 
-// Funcionalidad de BÚSQUEDA
-document.getElementById('btn-buscar').addEventListener('click', async () => {
-    const termino = document.getElementById('input-buscar').value;
+document.getElementById('btn-buscar').addEventListener('click', async (e) => {
+    e.preventDefault(); 
+    const termino = document.getElementById('input-buscar').value.trim();
     
-    if (termino.trim() === '') {
+    if (termino === '') {
         document.getElementById('btn-accion').click();
         return;
     }
 
     try {
         const res = await fetch(`${API_URL}/buscar/${termino}`);
-        renderizar(await res.json());
-    } catch (err) {
-        console.error("Error en la búsqueda:", err);
-    }
+        if (!res.ok) throw new Error(`Error del servidor: ${res.status}`);
+        const datos = await res.json();
+        renderizar(datos);
+    } catch (err) { console.error("Fallo crítico en la búsqueda:", err); }
 });
 
-// CRUD: Update (Editar Título)
 async function editar(id, tituloActual) {
     const nuevoTitulo = prompt("Ingresa el nuevo título:", tituloActual);
-    
     if (nuevoTitulo && nuevoTitulo.trim() !== "" && nuevoTitulo !== tituloActual) {
         try {
             await fetch(`${API_URL}/actualizar/${id}`, { 
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ titulo: nuevoTitulo })
+                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ titulo: nuevoTitulo })
             });
             document.getElementById('btn-accion').click();
-        } catch (err) {
-            console.error("Error al actualizar:", err);
-        }
+        } catch (err) { console.error("Error al actualizar:", err); }
     }
 }
 
-// CRUD: Delete (Borrar)
 async function eliminar(id) {
     if(confirm("¿Seguro que quieres borrar este elemento?")) {
         try {
             await fetch(`${API_URL}/eliminar/${id}`, { method: 'DELETE' });
             document.getElementById('btn-accion').click();
-        } catch (err) {
-            console.error("Error al eliminar:", err);
-        }
+        } catch (err) { console.error("Error al eliminar:", err); }
     }
 }
 
-// Carga inicial automática al abrir la página
 document.getElementById('btn-accion').click();
