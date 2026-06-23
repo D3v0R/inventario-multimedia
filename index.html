@@ -13,7 +13,7 @@
         .btn-cyan:hover { background-color: #0891b2; }
     </style>
 </head>
-<body class="p-8 font-sans">
+<body class="p-8 font-sans relative">
 
     <div class="max-w-2xl mx-auto">
         <h1 class="text-3xl font-bold mb-6 text-purple-custom">Gestor Multimedia NoSQL</h1>
@@ -60,10 +60,44 @@
         <div id="contenedor-datos" class="space-y-4"></div>
     </div>
 
+    <div id="modal-editar" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+        <div class="bg-card p-6 rounded-lg shadow-2xl w-full max-w-xl border border-gray-700">
+            <h2 class="text-2xl font-bold mb-4 text-blue-400">Editar Elemento</h2>
+            <form id="editForm" class="space-y-4">
+                <input type="hidden" id="edit-id" name="id">
+                
+                <input type="text" id="edit-titulo" name="titulo" placeholder="Título" required class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500 transition-colors">
+                
+                <textarea id="edit-descripcion" name="descripcion" placeholder="Descripción" class="w-full p-3 rounded bg-gray-900 border border-gray-700 text-white outline-none focus:border-blue-500 transition-colors"></textarea>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-900 hover:bg-gray-800 transition-colors group">
+                        <span class="text-sm text-gray-400 font-bold mb-1">Nueva Imagen (Opcional)</span>
+                        <span id="edit-texto-imagen" class="text-xs text-gray-500 truncate max-w-[150px]">Mantener actual</span>
+                        <input type="file" name="imagen" accept="image/*" class="hidden" onchange="document.getElementById('edit-texto-imagen').textContent = this.files[0] ? this.files[0].name : 'Mantener actual'">
+                    </label>
+
+                    <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-900 hover:bg-gray-800 transition-colors group">
+                        <span class="text-sm text-gray-400 font-bold mb-1">Nuevo Audio (Opcional)</span>
+                        <span id="edit-texto-audio" class="text-xs text-gray-500 truncate max-w-[150px]">Mantener actual</span>
+                        <input type="file" name="audio" accept="audio/*" class="hidden" onchange="document.getElementById('edit-texto-audio').textContent = this.files[0] ? this.files[0].name : 'Mantener actual'">
+                    </label>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="cerrarModal()" class="w-1/2 py-3 bg-gray-600 hover:bg-gray-500 rounded font-bold text-white transition-colors">Cancelar</button>
+                    <button type="submit" class="w-1/2 py-3 bg-blue-600 hover:bg-blue-500 rounded font-bold text-white transition-colors shadow-lg">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         const API_URL = "https://inventario-multimedia.onrender.com";
         const contenedor = document.getElementById('contenedor-datos');
         const formulario = document.getElementById('uploadForm');
+        const editForm = document.getElementById('editForm');
+        const modalEditar = document.getElementById('modal-editar');
 
         function renderizar(datos) {
             contenedor.innerHTML = datos.length ? "" : "<p class='text-center text-gray-500 italic mt-8'>No hay datos guardados aún.</p>";
@@ -75,20 +109,40 @@
                 const imagenHTML = rutaImagen ? `<img src="${API_URL}/${rutaImagen}" class="w-full h-56 object-cover mb-3 rounded shadow-md" alt="Imagen">` : '';
                 const audioHTML = rutaAudio ? `<audio controls class="w-full mt-3 rounded"><source src="${API_URL}/${rutaAudio}"></audio>` : '';
 
+                // Escapar comillas para evitar errores en el onclick
+                const tituloEscapado = item.titulo ? item.titulo.replace(/'/g, "\\'") : '';
+                const descEscapada = item.descripcion ? item.descripcion.replace(/'/g, "\\'") : '';
+
                 contenedor.innerHTML += `
                     <div class="bg-gray-800 p-5 rounded-lg border-l-4 border-purple-500 mb-4 shadow-xl hover:bg-gray-750 transition-all">
                         ${imagenHTML}
                         <h3 class="font-bold text-2xl text-white tracking-wide">${item.titulo}</h3>
-                        <p class="text-gray-400 mt-2 leading-relaxed">${item.descripcion}</p>
+                        <p class="text-gray-400 mt-2 leading-relaxed">${item.descripcion || ''}</p>
                         ${audioHTML}
                         <div class="mt-5 flex gap-3">
-                            <button onclick="editar('${item._id}', '${item.titulo}')" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded text-sm font-bold transition-colors shadow">Editar</button>
+                            <button onclick="abrirModal('${item._id}', '${tituloEscapado}', '${descEscapada}')" class="bg-blue-600 hover:bg-blue-500 px-4 py-1.5 rounded text-sm font-bold transition-colors shadow">Editar</button>
                             <button onclick="eliminar('${item._id}')" class="bg-red-600 hover:bg-red-500 px-4 py-1.5 rounded text-sm font-bold transition-colors shadow">Borrar</button>
                         </div>
                     </div>`;
             });
         }
 
+        // --- MANEJO DEL MODAL DE EDICIÓN ---
+        function abrirModal(id, titulo, descripcion) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-titulo').value = titulo;
+            document.getElementById('edit-descripcion').value = descripcion;
+            document.getElementById('edit-texto-imagen').textContent = 'Mantener actual';
+            document.getElementById('edit-texto-audio').textContent = 'Mantener actual';
+            modalEditar.classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            modalEditar.classList.add('hidden');
+            editForm.reset();
+        }
+
+        // --- SUBIR NUEVO ELEMENTO ---
         formulario.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target); 
@@ -112,6 +166,34 @@
             }
         });
 
+        // --- ACTUALIZAR ELEMENTO EXISTENTE ---
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const formData = new FormData(e.target);
+            
+            // Eliminar archivos vacíos para que no sobreescriban los existentes en el backend si el usuario no seleccionó nada nuevo
+            if (!formData.get('imagen').name) formData.delete('imagen');
+            if (!formData.get('audio').name) formData.delete('audio');
+
+            try {
+                // Al enviar archivos, ya NO usamos JSON, mandamos FormData directamente
+                const res = await fetch(`${API_URL}/actualizar/${id}`, { 
+                    method: 'PUT',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    cerrarModal();
+                    document.getElementById('btn-accion').click();
+                } else {
+                    alert("Error al actualizar en el servidor.");
+                }
+            } catch (err) {
+                console.error("Error al actualizar:", err);
+            }
+        });
+
         document.getElementById('btn-accion').addEventListener('click', async () => {
             try {
                 const res = await fetch(`${API_URL}/datos`);
@@ -121,7 +203,6 @@
             }
         });
 
-        // --- FUNCIONALIDAD DEL BOTÓN DE BÚSQUEDA ---
         document.getElementById('btn-buscar').addEventListener('click', async (e) => {
             e.preventDefault(); 
             const termino = document.getElementById('input-buscar').value.trim();
@@ -133,32 +214,13 @@
 
             try {
                 const res = await fetch(`${API_URL}/buscar/${termino}`);
-                
                 if (!res.ok) throw new Error("Error al conectar con el servidor");
-                
                 const datos = await res.json();
                 renderizar(datos); 
             } catch (err) {
                 console.error("Fallo crítico en la búsqueda:", err);
             }
         });
-
-        async function editar(id, tituloActual) {
-            const nuevoTitulo = prompt("Ingresa el nuevo título:", tituloActual);
-            
-            if (nuevoTitulo && nuevoTitulo.trim() !== "" && nuevoTitulo !== tituloActual) {
-                try {
-                    await fetch(`${API_URL}/actualizar/${id}`, { 
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ titulo: nuevoTitulo })
-                    });
-                    document.getElementById('btn-accion').click();
-                } catch (err) {
-                    console.error("Error al actualizar:", err);
-                }
-            }
-        }
 
         async function eliminar(id) {
             if(confirm("¿Seguro que quieres borrar este elemento?")) {
@@ -171,6 +233,7 @@
             }
         }
 
+        // Carga inicial
         document.getElementById('btn-accion').click();
     </script>
 </body>
